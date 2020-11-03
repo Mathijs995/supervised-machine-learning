@@ -1,5 +1,5 @@
-grid.search.cross.validation = function(X, y, estimator, params.list, n.folds,
-  ind.metric, comb.metric, verbose=F) {
+grid.search.cross.validation = function(X, y, estimator, params.list,
+  n.folds=10, ind.metric, comb.metric, fold.id=NULL, verbose=F) {
   # Implementation of hyperparameter tuning using grid search using K-fold
   # cross-validation for given data, a given estimator, and given metrics.
   #
@@ -7,7 +7,12 @@ grid.search.cross.validation = function(X, y, estimator, params.list, n.folds,
   #   X:           Table containing numerical explanatory variables.
   #   y:           Column containing a numerical dependent variable.
   #   estimator:   Estimator to use in hyperparameter tuning.
-  #   n.folds:     Number of folds to use in cross-validation.
+  #   n.folds:     Number of folds - default is 10. Although n.folds can be as
+  #                large as the sample size (leave-one-out CV), it is not
+  #                recommended for large datasets.
+  #   fold.id:     An optional vector of values between 1 and n.fold
+  #                identifying what fold each observation is in. If supplied,
+  #                n.fold can be missing.
   #   ind.metric:  Metric for evaluating performance on fold.
   #   comb.metric: Combination function for individual metrics.
   #   verbose:     Indicator for displaying progress bar. Default is FALSE.
@@ -18,10 +23,12 @@ grid.search.cross.validation = function(X, y, estimator, params.list, n.folds,
   
   # Define constants
   y = data.matrix(y); X = data.matrix(X); N = nrow(X); best.metric = Inf
-  metrics = rep(NULL, n.folds); fold.size = ceiling(N / n.folds)
   
-  # Shuffle data
-  ids = sample(N, N); X = X[ids, ]; y = y[ids]
+  # Specify fold ids if not given and initialize metrics and ids vector
+  if(is.null(fold.id)) fold.id = ((1:N) %% n.folds + 1)[sample(N, N)]
+  else n.folds =length(unique(fold.id))
+  metrics = rep(NULL, n.folds); test.ids = matrix(nrow=n.folds, ncol=N)
+  for (fold in 1:n.folds) test.ids[fold, ] = (fold.id == fold)
   
   # Create grid for cross validation search
   grid = expand.grid(params.list); n.combs = nrow(grid)
@@ -30,7 +37,6 @@ grid.search.cross.validation = function(X, y, estimator, params.list, n.folds,
   if (verbose) pb = dplyr::progress_estimated(n.combs * n.folds)
   
   # Apply grid search
-  skips = 0
   for (i in 1:n.combs) {
     
     # Apply cross validation
@@ -40,9 +46,8 @@ grid.search.cross.validation = function(X, y, estimator, params.list, n.folds,
       if (verbose) pb$tick()$print()
       
       # Create training and test set
-      test.ids = ((fold - 1) * fold.size + 1):(min(fold * fold.size, N))
-      X.train = X[-test.ids, ]; X.test = X[test.ids, ]
-      y.train = y[-test.ids]; y.test = y[test.ids]
+      X.train = X[-test.ids[fold, ], ]; X.test = X[test.ids[fold, ], ]
+      y.train = y[-test.ids[fold, ]]; y.test = y[test.ids[fold, ]]
       
       # Apply estimator to training data
       beta.train = do.call(estimator, c(list(X=X.train, y=y.train),

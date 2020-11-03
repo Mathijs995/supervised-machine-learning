@@ -20,6 +20,9 @@ elastic.net.lm = function(X, y, lambda, alpha, descale=F, beta.tol=0,
   #   Dataframe containing the results of the linear regression model with
   #   elastic net penalty term solved using the MM algorithm.
   
+  # Estimate model with Ridge regression if possible
+  if (alpha == 1) return(ridge.lm(X, y, lambda, descale, beta.tol, verbose))
+  
   # Ensure data is numerical and create scaled data
   y = data.matrix(y); X = data.matrix(X); y.scale = scale(y); X.scale = scale(X)
   
@@ -59,7 +62,7 @@ elastic.net.lm = function(X, y, lambda, alpha, descale=F, beta.tol=0,
     A = inv.N.Xt.X.scale + lambda.l2.I + lambda.l1.D
     
     # Update parameters
-    b.new = solve(A, inv.N.Xt.y.scale)
+    b.new = solve(A) %*% inv.N.Xt.y.scale
     
     # Retrieve improvement
     loss.new = elastic.net.loss(b.new); delta = loss.old - loss.new
