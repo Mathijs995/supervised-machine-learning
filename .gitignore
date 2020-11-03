@@ -2,9 +2,6 @@
 .Rhistory
 .Rapp.history
 
-# Session Data files
-.RData
-
 # User-specific files
 .Ruserdata
 
@@ -37,3 +34,9 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+
+# Book
+The Elements of Statistical Learning.pdf
+
+# Directory of last year
+2019-2020/
