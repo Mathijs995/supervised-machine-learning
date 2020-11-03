@@ -60,17 +60,17 @@ params.list = list(
 N = nrow(X); n.folds = 5; fold.id = ((1:N) %% n.folds + 1)[sample(N, N)]
 
 # Define metric functions
-mse = function(X, y, beta) mean(sum((y - X %*% beta) ^ 2))
+lm.mse = function(X, y, beta) mean(sum(y - X %*% beta) ^ 2)
 root.mean = function(x) sqrt(mean(x))
 
 # Hyperparameter tuning using grid search 5-fold cross-validation
-gscv.res = grid.search.cross.validation(X, y, elastic.net.lm, params.list,
-  n.folds=n.folds, ind.metric=mse, comb.metric=root.mean, fold.id=fold.id,
-  verbose=T)
+gscv.res = grid.search.cross.validation(scale(X), scale(y), elastic.net.lm,
+  params.list, n.folds=n.folds, ind.metric=lm.mse, comb.metric=root.mean,
+  fold.id=fold.id, verbose=T)
 
 # Compare outcome with glmnet package
-cv.fit = cv.glmnet(data.matrix(scale(X)), data.matrix(scale(y)), nfolds=n.folds,
-  foldid=fold.id, gamma=gscv.res$alpha, lambda=params.list$lambda)
+cv.fit = cv.glmnet(scale(data.matrix(X)), scale(data.matrix(y)), nfolds=n.folds,
+  foldid=fold.id, gamma=params.list$alpha, lambda=params.list$lambda)
 
 # Display optimal hyperparameters
 cat('Optimal lambda: ', cv.fit$lambda.min, '\n')
@@ -78,7 +78,7 @@ cat('Optimal lambda: ', gscv.res$lambda, '\nOptimal alpha:  ',
   gscv.res$alpha, '\n')
 
 # Estimate model on all data for optimal values of lambda and alpha
-elastic.net.lm(X, y, lambda = gscv.res$lambda, alpha = gscv.res$alpha)
+elastic.net.lm(X, y, lambda=gscv.res$lambda, alpha=gscv.res$alpha)
 
 # Display glmnet results
 plot(cv.fit)
