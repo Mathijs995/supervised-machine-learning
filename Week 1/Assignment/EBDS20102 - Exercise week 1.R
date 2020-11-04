@@ -17,12 +17,10 @@
 # Load packages
 install.packages(c("Ecdat"), quiet=T)
 
-# Set working directory and laod implementations
-setwd(
-  paste0(
-    getwd(),
-    "/Google Drive/Tinbergen - MPhil/Supervised Machine Learning/Week 1")
-)
+# Specify working directory
+source('../../init.R')
+WEEK = 'Week 1'
+setwd(paste0(BASE.DIR, '/Supervised Machine Learning/', WEEK, '/Assignment'))
 
 # Load dependencies
 source('better.subset.lm.R')

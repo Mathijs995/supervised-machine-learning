@@ -12,7 +12,14 @@
 ################################################################################
 # Initialize local settings
 ################################################################################
+
+# Specify working directory
 source('../../init.R')
+WEEK = 'Week 2'
+setwd(paste0(BASE.DIR, '/Supervised Machine Learning/', WEEK, '/Assignment'))
+
+# Specify options
+options(scipen=999)
 
 ################################################################################
 # Load dependencies

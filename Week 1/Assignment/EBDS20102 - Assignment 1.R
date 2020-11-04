@@ -13,9 +13,10 @@
 # Load dependencies
 ################################################################################
 
-# Set working directory
-BASE.DIR = '~/Google Drive/Tinbergen - MPhil'
-setwd(paste0(BASE.DIR, '/Supervised Machine Learning/Week 1/Assignment'))
+# Specify working directory
+source('../../init.R')
+WEEK = 'Week 1'
+setwd(paste0(BASE.DIR, '/Supervised Machine Learning/', WEEK, '/Assignment'))
 
 
 ################################################################################
