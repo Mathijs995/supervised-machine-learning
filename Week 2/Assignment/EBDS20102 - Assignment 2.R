@@ -12,14 +12,7 @@
 ################################################################################
 # Initialize local settings
 ################################################################################
-
-# Set working directory
-BASE.DIR = '~/Google Drive/Tinbergen - MPhil'
-WEEK = 'Week 2'
-setwd(paste0(BASE.DIR, '/Supervised Machine Learning/', WEEK, '/Assignment'))
-
-# Specify options
-options(scipen=999)
+source('../../init.R')
 
 ################################################################################
 # Load dependencies
@@ -79,7 +72,7 @@ cat('Optimal lambda: ', gscv.res$lambda, '\nOptimal alpha:  ',
 
 # Estimate model on all data for optimal values of lambda and alpha
 elastic.net.lm(scale(X), scale(y), alpha=gscv.res$alpha, lambda=gscv.res$lambda)
-glmnet(scale(X), scale(y), alpha=gscv.res$alpha, lambda=gscv.res$lambda)$beta
+glmnet(scale(X), scale(y), alpha=gscv.res$alpha, lambda=gscv.res$lambda)
 
 # Display glmnet results
 plot(cv.fit)
