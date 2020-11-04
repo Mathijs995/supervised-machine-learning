@@ -22,7 +22,7 @@ elastic.net.lm = function(X, y, lambda, alpha, standardize=T, beta.tol=0,
   #   elastic net penalty term solved using the MM algorithm.
   
   # Estimate model with Ridge regression if possible
-  if (alpha == 1) return(ridge.lm(X, y, lambda / 2, standardize, beta.tol,
+  if (alpha == 0) return(ridge.lm(X, y, lambda / 2, standardize, beta.tol,
     verbose))
   
   # Ensure data is numerical and scale data if necessary
@@ -61,8 +61,8 @@ elastic.net.lm = function(X, y, lambda, alpha, standardize=T, beta.tol=0,
     iter = iter + 1; b.old = b.new; loss.old = loss.new
     
     # Compute A and D matrices
-    b.old[abs(b.old) < eps] = eps; lambda.l1.D = diag(lambda.l1 / b.old)
-    A = inv.N.Xt.X.scale + lambda.l2.I + lambda.l1.D
+    b.old[abs(b.old) < eps] = eps; lambda.l1.D = diag(lambda.l1 / abs(b.old))
+    A = inv.N.Xt.X.scale + lambda.l1.D + lambda.l2.I
     
     # Update parameters
     b.new = solve(A) %*% inv.N.Xt.y.scale

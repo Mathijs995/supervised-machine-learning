@@ -52,7 +52,7 @@ while (any(duplicated(t(X)))) X = X[, -min(which(duplicated(t(X))))]
 
 # Specify hyperparameter values to consider
 params.list = list(
-  'alpha' = 10 ^ seq(-5, 0, length.out = 100),
+  'alpha' = seq(0, 1, length.out = 100),
   'lambda' = 10 ^ seq(-5, 5, length.out = 100)
 )
 
