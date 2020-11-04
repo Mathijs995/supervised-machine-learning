@@ -1,5 +1,5 @@
 # Set working directory
-BASE.DIR = '/Users/mathijs/Google Drive/Tinbergen - MPhil'
+BASE.DIR = ### TODO: EDIT ME ###
 WEEK = 'Week 2'
 setwd(paste0(BASE.DIR, '/Supervised Machine Learning/', WEEK, '/Assignment'))
 
