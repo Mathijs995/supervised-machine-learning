@@ -1,5 +1,5 @@
 grid.search.cross.validation = function(X, y, estimator, params.list,
-  n.folds=10, ind.metric, comb.metric, fold.id=NULL, verbose=F) {
+  n.folds=10, ind.metric, comb.metric, fold.id=NULL, verbose=F, ...) {
   # Implementation of hyperparameter tuning using grid search using K-fold
   # cross-validation for given data, a given estimator, and given metrics.
   #
@@ -16,6 +16,7 @@ grid.search.cross.validation = function(X, y, estimator, params.list,
   #   ind.metric:  Metric for evaluating performance on fold.
   #   comb.metric: Combination function for individual metrics.
   #   verbose:     Indicator for displaying progress bar. Default is FALSE.
+  #   ...:         Additional arguments that can be passed to the estimator.
   #
   # Output:
   #   Dataframe containing the results of the linear regression model with
@@ -51,7 +52,7 @@ grid.search.cross.validation = function(X, y, estimator, params.list,
       
       # Apply estimator to training data
       beta.train = do.call(estimator, c(list(X=X.train, y=y.train),
-        as.list(grid[i, ])))$coefficients
+        as.list(grid[i, ]), list(...)))$coefficients
       
       # Store performance on test data
       metrics[fold] = ind.metric(X.test, y.test, beta.train)
@@ -65,5 +66,5 @@ grid.search.cross.validation = function(X, y, estimator, params.list,
   }
   
   # Return best hyperparameters
-  return(c(best.params))
+  if (length(params.list) > 1) return(c(best.params)); return(best.params)
 }

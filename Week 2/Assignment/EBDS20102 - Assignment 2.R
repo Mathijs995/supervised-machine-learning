@@ -60,16 +60,16 @@ params.list = list(
 N = nrow(X); n.folds = 5; fold.id = ((1:N) %% n.folds + 1)[sample(N, N)]
 
 # Define metric functions
-lm.mse = function(X, y, beta) mean(sum(y - X %*% beta) ^ 2)
+lm.mse = function(X, y, beta) mean(sum(scale(y) - scale(X) %*% beta) ^ 2)
 root.mean = function(x) sqrt(mean(x))
 
 # Hyperparameter tuning using grid search 5-fold cross-validation
 gscv.res = grid.search.cross.validation(scale(X), scale(y), elastic.net.lm,
   params.list, n.folds=n.folds, ind.metric=lm.mse, comb.metric=root.mean,
-  fold.id=fold.id, verbose=T)
+  fold.id=fold.id, verbose=T, standardize=F)
 
 # Compare outcome with glmnet package
-cv.fit = cv.glmnet(scale(data.matrix(X)), scale(data.matrix(y)), nfolds=n.folds,
+cv.fit = cv.glmnet(data.matrix(scale(X)), data.matrix(scale(y)), nfolds=n.folds,
   foldid=fold.id, gamma=params.list$alpha, lambda=params.list$lambda)
 
 # Display optimal hyperparameters
