@@ -52,8 +52,9 @@ X = apply(X, 2, function(x) {
 # Append transformed explanatory variables
 transforms = list('sqrt'=sqrt, 'log'=log, 'square'=function(x) x ^ 2,
   'cube'=function(x) x ^ 3)
+X.orig = X
 for (transform in names(transforms)) {
-  X.cont = X[, apply(X, 2, function(x) !setequal(x, c(0, 1)))]
+  X.cont = X.orig[, apply(X.orig, 2, function(x) !setequal(x, c(0, 1)))]
   colnames(X.cont) = paste(transform, colnames(X.cont), sep='_')
   X = cbind(X, transforms[[transform]](X.cont))
 }
