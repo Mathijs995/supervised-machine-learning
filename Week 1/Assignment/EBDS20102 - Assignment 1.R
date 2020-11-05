@@ -50,8 +50,7 @@ X = apply(X, 2, function(x) {
 })
 
 # Append transformed explanatory variables
-transforms = list('sqrt'=sqrt, 'log'=log, 'square'=function(x) x ^ 2,
-  'cube'=function(x) x ^ 3)
+transforms = list('sqrt'=sqrt, 'log'=log, 'square'=function(x) x ^ 2)
 X.orig = X
 for (transform in names(transforms)) {
   X.cont = X.orig[, apply(X.orig, 2, function(x) !setequal(x, c(0, 1)))]
@@ -60,11 +59,24 @@ for (transform in names(transforms)) {
 }
 
 # Specify m.vals and initial betas
-P = ncol(X); m.vals = c(1:P); b.init = list()
-for (m in m.vals) {
-  b.init[[m]] = rep(0, P); b.init[[m]][sample(P, m)] = runif(m)
+runs = 1:100
+m.max = ncol(X)
+P = ncol(X); m.vals = c(1:m.max); b.init = list()
+for (i in runs) {
+  b.init[[i]] = list()
+  for (m in m.vals)
+    b.init[[i]][[m]] = rep(0, P); b.init[[i]][[m]][sample(P, m)] = runif(m)
 }
 
 # Estimate and show results of better subset regression
-apply(better.subset.lm(X, y, m.vals=m.vals, verbose=1, b.init=b.init), 2,
-  function(x) format(x, nsmall=10))
+best.metric = Inf
+for (i in runs) {
+  res = tryCatch(
+    better.subset.lm(X, y, m.vals=m.vals, verbose=0, b.init=b.init[[i]]),
+    error = function(e) return(NULL)
+  )
+  if (is.null(res)) next
+  adj.r2 = res$adjusted.R.2[1]
+  if (adj.r2 < best.metric) { best.res = res; best.metric = adj.r2 }
+}
+print(best.res)

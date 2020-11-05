@@ -28,7 +28,7 @@ better.subset.lm = function(X, y, m.vals, b.init=NULL, seed=NULL, tol=1e-6,
   rss_tot = sum((y - mean(y)) ^ 2); Xt.X.scale = crossprod(X.scale)
   inv.lambda = 1 / eigen(Xt.X.scale)$values[1]; N = nrow(X); P = ncol(X)
   inv.lambda.Xt.y.scale = inv.lambda * crossprod(X.scale, y.scale)
-  best.metric = Inf; if (!is.null(seed)) set.seed(seed)
+  best.metric = -Inf; if (!is.null(seed)) set.seed(seed)
   
   ## Define helper functions for computing statistics, descaling and printing
   rss = function(beta) sum((y.scale - X.scale %*% beta) ^ 2)
@@ -90,7 +90,7 @@ better.subset.lm = function(X, y, m.vals, b.init=NULL, seed=NULL, tol=1e-6,
     
     # Update best estimate if better performance
     metric = adj.r2(b, m)
-    if (metric < best.metric) { best.metric = metric; best.b = b }
+    if (metric > best.metric) { best.metric = metric; best.b = b }
   }
   
   # Generate summary statistics
