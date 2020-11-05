@@ -4,15 +4,15 @@ ridge.lm = function(X, y, lambda, intercept=T, standardize=T, beta.tol=0,
   # with a Ridge penalty term.
   #
   # Inputs:
-  #   X:          Table containing numerical explanatory variables.
-  #   y:          Column containing a numerical dependent variable.
-  #   lambda:     Penalty scaling constant.
+  #   X:            Table containing numerical explanatory variables.
+  #   y:            Column containing a numerical dependent variable.
+  #   lambda:       Penalty scaling constant.
   #   intercept:    Indicator for whether or not to add an intercept. Default
   #                 is TRUE. If FALSE, standardize is ignored.
   #   standardize:  Indicator for whether or not to scale data. Default is TRUE.
-  #   beta.tol:   Rounding tolerance for beta, default is 0.
-  #   verbose:    Integer indicating the step-size of printing progress updates,
-  #               default is 0, that is, no progress updates.
+  #   beta.tol:     Rounding tolerance for beta, default is 0.
+  #   verbose:      Integer indicating the step-size of printing progress
+  #                 updates, default is 0, that is, no progress updates.
   #
   # Output:
   #   Dataframe containing the results of the linear regression model with

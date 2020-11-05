@@ -1,5 +1,5 @@
-elastic.net.lm = function(X, y, lambda, alpha, intercept=T, standardize=T,
-  beta.tol=0, loss.tol=1e-6, eps=1e-6, verbose=0) {
+elastic.net.lm = function(X, y, lambda, alpha, standardize=T,
+  beta.init=NULL, beta.tol=0, loss.tol=1e-6, eps=1e-6, seed=NULL, verbose=0) {
   # Implementation of the MM algorithm solver for a linear regression model
   # an elastic net penalty term.
   #
@@ -9,15 +9,18 @@ elastic.net.lm = function(X, y, lambda, alpha, intercept=T, standardize=T,
   #   lambda:       Penalty scaling constant.
   #   alpha:        Scalar of penalty for L1-norm of beta. Note that the scalar
   #                 assigned to the L2-norm is equal to (1 - alpha) / 2.
-  #   intercept:    Indicator for whether or not to add an intercept. Default
-  #                 is TRUE.
   #   standardize:  Indicator for whether or not to scale data. Default is TRUE.
+  #   beta.init:    Optional initial value of betas. If NULL, a random beta is
+  #                 sampled from the continuous uniform distribution on the
+  #                 interval [0, 1]. Default is NULL.
   #   beta.tol:     Rounding tolerance for beta, default is 0.
   #   loss.tol:     Tolerated loss, default is 1e-6.
   #   eps:          Correcting value in computation of D matrix, default is
   #                 1e-6.
-  #   verbose:      Integer indicating the step-size of printing progress updates,
-  #                 default is 0, that is, no progress updates.
+  #   seed:         Optional seed, used for generating the random initial beta.
+  #                 Ignored when an initial beta is provided. Default is NULL.
+  #   verbose:      Integer indicating the step-size of printing progress
+  #                 updates, default is 0, that is, no progress updates.
   #
   # Output:
   #   Dataframe containing the results of the linear regression model with
@@ -27,14 +30,13 @@ elastic.net.lm = function(X, y, lambda, alpha, intercept=T, standardize=T,
   if (alpha == 0) return(ridge.lm(X, y, lambda / 2, intercept, standardize,
     beta.tol, verbose))
   
-  # Standarize data and intercept if necessary
-  if (standardize){ y = scale(y); X = scale(X) }; if (intercept) X = cbind(1, X)
+  # Standarize data if necessary
+  if (standardize){ y = scale(y); X = scale(X) }
   
   # Define constants
-  N = nrow(X); P = ncol(X) - intercept; double.N = 2 * N
+  N = nrow(X); P = ncol(X); double.N = 2 * N
   lambda.l1 = lambda * alpha; lambda.l2 = lambda * (1 - alpha)
-  if (intercept) lambda.l2.I = diag(c(0, rep(lambda.l2, P)))
-  else lambda.l2.I = diag(rep(lambda.l2, P))
+  lambda.l2.I = diag(rep(lambda.l2, P))
   inv.N.Xt.X = crossprod(X) / N; inv.N.Xt.y = crossprod(X, y) / N
   
   # Define helper functions for printing progress and computing loss
@@ -46,10 +48,11 @@ elastic.net.lm = function(X, y, lambda, alpha, intercept=T, standardize=T,
     nsmall=10), progress.line('Loss.old', loss.old, nsmall=10),
     progress.line('delta', delta, nsmall=10))
   elastic.net.loss = function(beta) sum((y - X %*% beta) ^ 2) / double.N +
-    lambda.l1 * sum(abs(beta[-1])) + lambda.l2 / 2 * sum(beta[-1] ^ 2)
+    lambda.l1 * sum(abs(beta)) + lambda.l2 / 2 * sum(beta ^ 2)
   
   # Choose some inital beta_0 and compute initial loss
-  b.new = runif(P + intercept); loss.new = elastic.net.loss(b.new)
+  if(is.null(beta.init)) b.new = runif(P + intercept) else b.new = beta.init
+  loss.new = elastic.net.loss(b.new)
   
   # Update beta_k until convergence
   iter = 0; while (TRUE) {
