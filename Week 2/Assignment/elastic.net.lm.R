@@ -10,7 +10,7 @@ elastic.net.lm = function(X, y, lambda, alpha, intercept=T, standardize=T,
   #   alpha:        Scalar of penalty for L1-norm of beta. Note that the scalar
   #                 assigned to the L2-norm is equal to (1 - alpha) / 2.
   #   intercept:    Indicator for whether or not to add an intercept. Default
-  #                 is TRUE. If FALSE, standardize is ignored.
+  #                 is TRUE.
   #   standardize:  Indicator for whether or not to scale data. Default is TRUE.
   #   beta.tol:     Rounding tolerance for beta, default is 0.
   #   loss.tol:     Tolerated loss, default is 1e-6.
@@ -27,16 +27,15 @@ elastic.net.lm = function(X, y, lambda, alpha, intercept=T, standardize=T,
   if (alpha == 0) return(ridge.lm(X, y, lambda / 2, intercept, standardize,
     beta.tol, verbose))
   
-  # Add intercept and standarize data if necessary
-  if (intercept & standardize) y = scale(y)
-  if (intercept) if (standardize) X = cbind(1, scale(X)) else X = cbind(1, X)
+  # Standarize data and intercept if necessary
+  if (standardize){ y = scale(y); X = scale(X) }; if (intercept) X = cbind(1, X)
   
   # Define constants
-  N = nrow(X); P = ncol(X) - 1; double.N = 2 * N
-  lambda.l1 = lambda * alpha;lambda.l2 = lambda * (1 - alpha)
-  lambda.l2.I = lambda.l2 * diag(c(0, rep(1, P)))
+  N = nrow(X); P = ncol(X) - intercept; double.N = 2 * N
+  lambda.l1 = lambda * alpha; lambda.l2 = lambda * (1 - alpha)
+  if (intercept) lambda.l2.I = diag(c(0, rep(lambda.l2, P)))
+  else lambda.l2.I = diag(rep(lambda.l2, P))
   inv.N.Xt.X = crossprod(X) / N; inv.N.Xt.y = crossprod(X, y) / N
-  
   
   # Define helper functions for printing progress and computing loss
   progress.line = function(var, val, var_width=21, width=15, nsmall=0)
@@ -50,20 +49,16 @@ elastic.net.lm = function(X, y, lambda, alpha, intercept=T, standardize=T,
     lambda.l1 * sum(abs(beta[-1])) + lambda.l2 / 2 * sum(beta[-1] ^ 2)
   
   # Choose some inital beta_0 and compute initial loss
-  b.new = runif(P + 1); loss.new = elastic.net.loss(b.new)
+  b.new = runif(P + intercept); loss.new = elastic.net.loss(b.new)
   
   # Update beta_k until convergence
   iter = 0; while (TRUE) {
     # Update iteration and replace old parameters by previous
-    iter = iter + 1; b.old = b.new[-1]; loss.old = loss.new
+    iter = iter + 1; loss.old = loss.new; b.old = b.new
     
-    # Compute A and D matrices
-    b.old[abs(b.old) < eps] = eps
-    lambda.l1.D = diag(c(0, lambda.l1 / abs(b.old)))
-    A = inv.N.Xt.X + lambda.l1.D + lambda.l2.I
-    
-    # Update parameters
-    b.new = solve(A, inv.N.Xt.y)
+    # Compute A matrix, D matrix, and update parameters
+    b.old[abs(b.old) < eps] = eps; lambda.l1.D = diag(lambda.l1 / abs(b.old))
+    A = inv.N.Xt.X + lambda.l1.D + lambda.l2.I; b.new = solve(A, inv.N.Xt.y)
     
     # Retrieve improvement
     loss.new = elastic.net.loss(b.new); delta = loss.old - loss.new
@@ -84,12 +79,11 @@ elastic.net.lm = function(X, y, lambda, alpha, intercept=T, standardize=T,
   b.new[abs(b.new) < beta.tol] = 0
     
   # Generate summary statistics
-  rss = sum((y - X %*% b.new) ^ 2); dof = sum(b.new != 0)
-  r2 = 1 - rss / sum((y - mean(y)) ^ 2)
+  rss = sum((y - X %*% b.new) ^ 2); r2 = 1 - rss / sum((y - mean(y)) ^ 2)
+  adj.r2 = 1 - (1 - r2) * (N - 1) / (N - sum(b.new != 0))
   
   # Return results
-  return(list('coefficients'=b.new, 'alpha' = alpha, 'lambda' = lambda,
-    'loss'=rss / double.N + lambda.l1 * sum(abs(b.new)) +
-      lambda.l2 / 2 * sum(b.new ^ 2), 'R^2'=r2,
-    'adjusted R^2'=1 - (1 - r2) * (N - 1) / (N - dof)))
+  return(list('coefficients'=b.new, 'alpha'=alpha, 'lambda'=lambda,
+    'loss'=rss / double.N + lambda.l1 * sum(abs(b.new)) + lambda.l2 / 2 *
+      sum(b.new ^ 2), 'R^2'=r2, 'adjusted R^2'=adj.r2))
 }
