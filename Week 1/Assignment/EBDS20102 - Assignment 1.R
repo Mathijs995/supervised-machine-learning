@@ -28,6 +28,7 @@ options(scipen=999)
 
 # Install packages
 if (!require('Ecdat')) install.packages('Ecdat', quiet=T)
+if (!require('dplyr')) install.packages('dplyr', quiet=T)
 
 # Load dependencies
 source('better.subset.lm.R')
@@ -50,7 +51,8 @@ X = apply(X, 2, function(x) {
 })
 
 # Append transformed explanatory variables
-transforms = list('sqrt'=sqrt, 'log'=log, 'square'=function(x) x ^ 2)
+transforms = list('sqrt'=sqrt, 'log'=log, 'square'=function(x) x ^ 2,
+  'cube'=function(x) x ^ 3)
 X.orig = X
 for (transform in names(transforms)) {
   X.cont = X.orig[, apply(X.orig, 2, function(x) !setequal(x, c(0, 1)))]
@@ -70,6 +72,7 @@ for (i in runs) {
 
 # Estimate and show results of better subset regression
 best.metric = Inf
+pb = dplyr::progress_estimated(length(runs))
 for (i in runs) {
   res = tryCatch(
     better.subset.lm(X, y, m.vals=m.vals, verbose=0, b.init=b.init[[i]]),
@@ -78,5 +81,6 @@ for (i in runs) {
   if (is.null(res)) next
   adj.r2 = res$adjusted.R.2[1]
   if (adj.r2 < best.metric) { best.res = res; best.metric = adj.r2 }
+  pb$tick()$print()
 }
 print(best.res)
