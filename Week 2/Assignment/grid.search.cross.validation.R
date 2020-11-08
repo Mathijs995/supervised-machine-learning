@@ -51,11 +51,18 @@ grid.search.cross.validation = function(X, y, estimator, params.list,
       y.train = y[-test.ids[fold, ]]; y.test = y[test.ids[fold, ]]
       
       # Apply estimator to training data
-      beta.train = do.call(estimator, c(list(X=X.train, y=y.train),
-        as.list(grid[i, ]), list(...)))$coefficients
+      beta.train = tryCatch(
+        do.call(estimator, c(list(X=X.train, y=y.train), as.list(grid[i, ]),
+          list(...)))$coefficients,
+        error = function(e) {
+          warning(paste('Failed for', paste(names(params.list), '=', grid[i, ],
+            collapse=', '))); return(NULL)
+        }
+      )
       
       # Store performance on test data
-      metrics[fold] = ind.metric(X.test, y.test, beta.train)
+      if (is.null(beta.train)) metrics[fold] = Inf
+      else metrics[fold] = ind.metric(X.test, y.test, beta.train)
     }
     
     # Combine performances on folds to overall performance

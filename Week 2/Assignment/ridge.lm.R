@@ -1,5 +1,5 @@
-ridge.lm = function(X, y, lambda, intercept=T, standardize=T, beta.tol=0,
-  verbose=0) {
+ridge.lm = function(X, y, lambda, intercept=F, standardize=T, descale=T, 
+  beta.tol=0, verbose=0) {
   # Implementation of the analytical solution for the linear regression model
   # with a Ridge penalty term.
   #
@@ -8,7 +8,7 @@ ridge.lm = function(X, y, lambda, intercept=T, standardize=T, beta.tol=0,
   #   y:            Column containing a numerical dependent variable.
   #   lambda:       Penalty scaling constant.
   #   intercept:    Indicator for whether or not to add an intercept. Default
-  #                 is TRUE. If FALSE, standardize is ignored.
+  #                 is FALSE. If TRUE, standardize is ignored.
   #   standardize:  Indicator for whether or not to scale data. Default is TRUE.
   #   beta.tol:     Rounding tolerance for beta, default is 0.
   #   verbose:      Integer indicating the step-size of printing progress
@@ -18,25 +18,23 @@ ridge.lm = function(X, y, lambda, intercept=T, standardize=T, beta.tol=0,
   #   Dataframe containing the results of the linear regression model with
   #   Ridge penalty term solved using the analytical solution
   
-  # Add intercept and standarize data if necessary
-  if (intercept & standardize) y = scale(y)
-  if (intercept) if (standardize) X = cbind(1, scale(X)) else X = cbind(1, X)
+  # Import our own shared own functions
+  source('../../base.R'); descale = function(beta) descale.b(beta, X, y)
   
-  # Define constants
-  N = nrow(X); P = ncol(X) - 1
+  # Add intercept or standarize data if necessary
+  X = create_X(X, intercept, standardize)
+  y = create_y(y, intercept, standardize)
   
   # Derive beta estimate
-  b.new = solve(crossprod(X) + lambda * diag(P + 1), crossprod(X, y))
+  b.new = solve(crossprod(X) + lambda * diag(ncol(X)), crossprod(X, y))
   
-  # Force elements smaller than beta.tol to zero
+  # Set elements smaller than beta.tol to zero
   b.new[abs(b.new) < beta.tol] = 0
   
-  # Generate summary statistics
-  rss = sum((y - X %*% b.new) ^ 2); dof = sum(b.new != 0)
-  r2 = 1 - rss / sum((y - mean(y)) ^ 2)
-  
   # Return results
-  return(list('coefficients' = b.new, 'alpha' = 0, 'lambda' = lambda,
-    'loss'= rss / (2 * N) + lambda * sum(b.new[-1] ^ 2),
-    'R^2' = r2, 'adjusted R^2' = 1 - (1 - r2) * (N - 1) / (N - dof)))
+  return(list(
+    'coefficients'=if (intercept | !standardize) b.new else descale(b.new),
+    'alpha'=0, 'lambda'=lambda,
+    'loss'=elastic.net.loss(b.new, X, y, intercept, lambda.l1=0, lambda),
+    'R^2'=r2(b.new, X, y), 'adjusted R^2'=adj.r2(b.new, X, y)))
 }

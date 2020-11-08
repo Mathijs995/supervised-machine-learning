@@ -16,7 +16,7 @@
 # Specify working directory
 source('../../init.R')
 WEEK = 'Week 2'
-setwd(paste0(BASE.DIR, 'Supervised Machine Learning/', WEEK, '/Assignment'))
+setwd(paste0(BASE.DIR, '/Supervised Machine Learning/', WEEK, '/Assignment'))
 
 # Specify options
 options(scipen=999)
@@ -26,9 +26,8 @@ options(scipen=999)
 ################################################################################
 
 # Install packages
-if (!require('dplyr')) install.packages('dplyr', quiet=T)
 if (!require('glmnet')) install.packages('glmnet', quiet=T)
-if (!require('SVMMaj')) install.packages('SVMMaj', quiet=T)
+if (!require('dplyr')) install.packages('dplyr', quiet=T)
 
 # Load dependencies
 source('elastic.net.lm.R')
@@ -41,14 +40,15 @@ source('ridge.lm.R')
 ################################################################################
 
 # Load data
-df = SVMMaj::supermarket1996; df = df[sort(colnames(df))]
-df = subset(df, select=-c(CITY, GROCCOUP_sum, SHPINDX, STORE, ZIP))
+load('supermarket1996.rdata')
+df = supermarket1996[sort(colnames(supermarket1996))]; rm(supermarket1996)
+df = subset(df, select = -c(CITY, GROCCOUP_sum, SHPINDX, STORE, ZIP))
 
 # Define dependent and independent variables
 dep.var = 'GROCERY_sum'; y = df[dep.var]; X = df[colnames(df) != dep.var]
 
 # OPTIONAL: Remove duplicate columns
-while (any(duplicated(t(X)))) X = X[, -max(which(duplicated(t(X))))]
+while (any(duplicated(t(X)))) X = X[, -min(which(duplicated(t(X))))]
 
 # Specify hyperparameter values to consider
 params.list = list(
@@ -78,11 +78,8 @@ cat('Optimal lambda: ', gscv.res$lambda, '\nOptimal alpha:  ',
   gscv.res$alpha, '\n')
 
 # Estimate model on all data for optimal values of lambda and alpha
-res.self = elastic.net.lm(X, y, alpha=gscv.res$alpha,
-  lambda=gscv.res$lambda)
-res.glmnet = glmnet(scale(X), scale(y), lambda=cv.fit$lambda.min,
-  alpha=params.list$alpha)
-cbind(res.self$coefficients, c(res.glmnet$a0, as.vector(res.glmnet$beta)))
+elastic.net.lm(scale(X), scale(y), alpha=gscv.res$alpha, lambda=gscv.res$lambda)
+glmnet(scale(X), scale(y), alpha=gscv.res$alpha, lambda=gscv.res$lambda)
 
 # Display glmnet results
 plot(cv.fit)
