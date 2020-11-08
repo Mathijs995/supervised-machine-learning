@@ -1,10 +1,10 @@
-ridge.lm = function(X, y, lambda, intercept=F, standardize=T, descale=T, 
+ridge.lm = function(x, y, lambda, intercept=F, standardize=T, descale=T, 
   beta.tol=0, verbose=0) {
   # Implementation of the analytical solution for the linear regression model
   # with a Ridge penalty term.
   #
   # Inputs:
-  #   X:            Table containing numerical explanatory variables.
+  #   x:            Table containing numerical explanatory variables.
   #   y:            Column containing a numerical dependent variable.
   #   lambda:       Penalty scaling constant.
   #   intercept:    Indicator for whether or not to add an intercept. Default
@@ -19,22 +19,22 @@ ridge.lm = function(X, y, lambda, intercept=F, standardize=T, descale=T,
   #   Ridge penalty term solved using the analytical solution
   
   # Import our own shared own functions
-  source('../../base.R'); descale = function(beta) descale.b(beta, X, y)
+  source('../../base.R'); descale = function(beta) descale.beta(beta, x, y)
   
   # Add intercept or standarize data if necessary
-  X = create_X(X, intercept, standardize)
+  x = create_x(x, intercept, standardize)
   y = create_y(y, intercept, standardize)
   
   # Derive beta estimate
-  b.new = solve(crossprod(X) + lambda * diag(ncol(X)), crossprod(X, y))
+  b.new = solve(crossprod(x) + lambda * diag(ncol(x)), crossprod(x, y))
   
   # Set elements smaller than beta.tol to zero
   b.new[abs(b.new) < beta.tol] = 0
   
-  # Return results
-  return(list(
-    'coefficients'=if (intercept | !standardize) b.new else descale(b.new),
-    'alpha'=0, 'lambda'=lambda,
-    'loss'=elastic.net.loss(b.new, X, y, intercept, lambda.l1=0, lambda),
-    'R^2'=r2(b.new, X, y), 'adjusted R^2'=adj.r2(b.new, X, y)))
+  # Descale beta if necessary
+  if (intercept | !standardize) beta = c(0, b.new) else beta = descale(b.new)
+  
+  return(list('a0'=beta[1], 'beta'=beta[-1], 'alpha'=0, 'lambda'=lambda,
+    'loss'=elastic.net.loss(b.new, x, y, intercept, lambda.l1=0, lambda),
+    'R^2'=r2(b.new, x, y), 'adjusted R^2'=adj.r2(b.new, x, y)))
 }

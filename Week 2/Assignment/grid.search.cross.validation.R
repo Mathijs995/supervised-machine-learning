@@ -1,10 +1,10 @@
-grid.search.cross.validation = function(X, y, estimator, params.list,
-  n.folds=10, ind.metric, comb.metric, fold.id=NULL, verbose=F, ...) {
+grid.search.cross.validation = function(x, y, estimator, params.list,
+  n.folds=10, ind.metric, comb.metric, fold.id=NULL, force=T, verbose=F, ...) {
   # Implementation of hyperparameter tuning using grid search using K-fold
   # cross-validation for given data, a given estimator, and given metrics.
   #
   # Inputs:
-  #   X:           Table containing numerical explanatory variables.
+  #   x:           Table containing numerical explanatory variables.
   #   y:           Column containing a numerical dependent variable.
   #   estimator:   Estimator to use in hyperparameter tuning.
   #   n.folds:     Number of folds - default is 10. Although n.folds can be as
@@ -15,6 +15,8 @@ grid.search.cross.validation = function(X, y, estimator, params.list,
   #                n.fold can be missing.
   #   ind.metric:  Metric for evaluating performance on fold.
   #   comb.metric: Combination function for individual metrics.
+  #   force:       Indicator whether not to terminate when encountering errors.
+  #                Default is T, that is, errors are skipped with warning.
   #   verbose:     Indicator for displaying progress bar. Default is FALSE.
   #   ...:         Additional arguments that can be passed to the estimator.
   #
@@ -23,7 +25,7 @@ grid.search.cross.validation = function(X, y, estimator, params.list,
   #   elastic net penalty term solved using the MM algorithm.
   
   # Define constants
-  y = data.matrix(y); X = data.matrix(X); N = nrow(X); best.metric = Inf
+  y = data.matrix(y); x = data.matrix(x); N = nrow(x); best.metric = Inf
   
   # Specify fold ids if not given and initialize metrics and ids vector
   if(is.null(fold.id)) fold.id = ((1:N) %% n.folds + 1)[sample(N, N)]
@@ -40,29 +42,28 @@ grid.search.cross.validation = function(X, y, estimator, params.list,
   # Apply grid search
   for (i in 1:n.combs) {
     
-    # Apply cross validation
-    for (fold in 1:n.folds) {
-      
-      # If verbose, update progress bar
-      if (verbose) pb$tick()$print()
+    # Apply cross validation and if verbose, update progress bar
+    for (fold in 1:n.folds) { if (verbose) pb$tick()$print()
       
       # Create training and test set
-      X.train = X[-test.ids[fold, ], ]; X.test = X[test.ids[fold, ], ]
+      x.train = x[-test.ids[fold, ], ]; x.test = x[test.ids[fold, ], ]
       y.train = y[-test.ids[fold, ]]; y.test = y[test.ids[fold, ]]
       
       # Apply estimator to training data
-      beta.train = tryCatch(
-        do.call(estimator, c(list(X=X.train, y=y.train), as.list(grid[i, ]),
-          list(...)))$coefficients,
+      b = tryCatch(
+        do.call(estimator, c(list(x=x.train, y=y.train), as.list(grid[i, ]),
+          list(...)))$beta,
         error = function(e) {
           warning(paste('Failed for', paste(names(params.list), '=', grid[i, ],
-            collapse=', '))); return(NULL)
+            collapse=', ')))
+          if (force & grepl('.*singular.*', e$message, ignore.case=T))
+            return(NULL)
+          stop(e)
         }
       )
       
       # Store performance on test data
-      if (is.null(beta.train)) metrics[fold] = Inf
-      else metrics[fold] = ind.metric(X.test, y.test, beta.train)
+      metrics[fold] = ifelse(is.null(b), Inf, ind.metric(b, x.test, y.test))
     }
     
     # Combine performances on folds to overall performance
