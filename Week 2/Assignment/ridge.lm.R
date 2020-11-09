@@ -22,8 +22,8 @@ ridge.lm = function(x, y, lambda, intercept=F, standardize=T, descale=T,
   source('../../base.R'); descale = function(beta) descale.beta(beta, x, y)
   
   # Add intercept or standarize data if necessary
-  x = create_x(x, intercept, standardize)
-  y = create_y(y, intercept, standardize)
+  x = create.x(x, intercept, standardize)
+  y = create.y(y, intercept, standardize)
   
   # Derive beta estimate
   b.new = solve(crossprod(x) + lambda * diag(ncol(x)), crossprod(x, y))

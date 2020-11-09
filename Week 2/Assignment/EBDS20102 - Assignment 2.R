@@ -24,10 +24,9 @@ options(scipen=999)
 # Load dependencies
 ################################################################################
 
-# Install packages
-if (!require('dplyr')) install.packages('dplyr', quiet=T)
-if (!require('glmnet')) install.packages('glmnet', quiet=T)
-if (!require('SVMMaj')) install.packages('SVMMaj', quiet=T)
+# Install and load packages
+while (!require('glmnet')) install.packages('glmnet', quiet=T)
+while (!require('SVMMaj')) install.packages('SVMMaj', quiet=T)
 
 # Load dependencies
 source('../../base.R')
@@ -48,12 +47,12 @@ df = subset(df, select=-c(CITY, GROCCOUP_sum, SHPINDX, STORE, ZIP))
 dep.var = 'GROCERY_sum'; y = df[dep.var]; x = df[colnames(df) != dep.var]
 
 # OPTIONAL: Remove duplicate columns
-while (any(duplicated(t(x)))) x = x[, -max(which(duplicated(t(x))))]
+x = x[, -which(duplicated(t(x)))]
 
 # Specify hyperparameter values to consider
-params.list = list(
-  'alpha' = seq(0, 1, length.out=100),
-  'lambda' = 10 ^ seq(-5, 5, length.out=100)
+params.length = 25; params.list = list(
+  'alpha' = seq(0, 1, length.out=params.length),
+  'lambda' = c(0, 10 ^ seq(-5, 5, length.out=params.length - 1))
 )
 
 # Specify fold ids
@@ -64,13 +63,13 @@ N = nrow(x); n.folds = 5; fold.id = ((1:N) %% n.folds + 1)[sample(N, N)]
 ################################################################################
 
 # Define metric functions
-lm.mse.scale = function(beta, x, y) mean(sum((y - x %*% beta) ^ 2))
+lm.mse = function(beta, x, y) mean(sum((y - x %*% beta) ^ 2))
 root.mean = function(x) sqrt(mean(x))
 
 # Hyperparameter tuning using estimator based on MM algorithm
 gscv.own = grid.search.cross.validation(scale(x), scale(y), elastic.net.lm,
-  params.list, ind.metric=lm.mse.scale, comb.metric=root.mean,
-  fold.id=fold.id, verbose=T, force=T, intercept=F, standardize=F)
+  params.list, ind.metric=lm.mse, comb.metric=root.mean, fold.id=fold.id,
+  verbose=T, force=T, heatmap=T, plot.coef=T, intercept=F, standardize=F)
 
 # Display optimal hyperparameters according to own implementation
 print('Hyperparameter tuning using own estimator and own tuner')
@@ -78,8 +77,8 @@ progress.str(list(c('Alpha', gscv.own$alpha), c('Lambda', gscv.own$lambda)))
 
 # Hyperparameter tuning using glmnet estimator
 gscv.glm = grid.search.cross.validation(scale(x), scale(y), glmnet,
-  params.list, ind.metric=lm.mse.scale, comb.metric=root.mean,
-  fold.id=fold.id, verbose=T, force=T, intercept=F, standardize=F)
+  params.list, ind.metric=lm.mse, comb.metric=root.mean, fold.id=fold.id,
+  verbose=T, force=T, heatmap=T, plot.coef=T, intercept=F, standardize=F)
 
 # Display optimal hyperparameters according to glmnet
 print('Hyperparameter tuning using glmnet and own tuner')

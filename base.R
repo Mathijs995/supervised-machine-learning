@@ -16,9 +16,10 @@ adj.r2 = function(beta, x, y) {
 }
 
 ################################################################################
-# Helper functions for constructing dependent and explanatory variables.
+# Helper functions for initializing machine learning models.
 #
 # Inputs:
+#   beta.init:    Initial beta parameter.
 #   x:            Table containing numerical explanatory variables.
 #   y:            Column containing a numerical dependent variable.
 #   intercept:    Indicator for whether to include an intercept or not.
@@ -28,15 +29,19 @@ adj.r2 = function(beta, x, y) {
 # Output:
 #   Dependent or explanatory variables formatted to be used in a regression
 #   model.
-create_x = function(x, intercept, standardize) {
+create.x = function(x, intercept, standardize) {
   x = data.matrix(x)
   if (intercept) return(cbind(1, x)) else if (standardize) x = scale(x)
   return(x)
 }
-create_y = function(y, intercept, standardize) {
+create.y = function(y, intercept, standardize) {
   y = data.matrix(y)
   if (!intercept & standardize) y = scale(y)
   return(y)
+}
+initialize.beta = function(beta.init, x) {
+  if(is.null(beta.init)) return(2 * runif(ncol(x)) - 1)
+  return(beta.init)
 }
 
 ################################################################################

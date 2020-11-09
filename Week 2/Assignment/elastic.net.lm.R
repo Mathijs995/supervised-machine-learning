@@ -37,8 +37,8 @@ elastic.net.lm = function(x, y, lambda, alpha, intercept=F, standardize=T,
   source('../../base.R'); descale = function(beta) descale.beta(beta, x, y)
   
   # Add intercept or standarize data if necessary
-  x = create_x(x, intercept, standardize)
-  y = create_y(y, intercept, standardize)
+  x = create.x(x, intercept, standardize)
+  y = create.y(y, intercept, standardize)
   
   # Define constants
   N = nrow(x); P = ncol(x); if (!is.null(seed)) set.seed(seed)
@@ -59,8 +59,7 @@ elastic.net.lm = function(x, y, lambda, alpha, intercept=F, standardize=T,
     list(c('Iteration', i), c('Loss.old', o), c('Loss.new', n), c('Delta', d))
   
   # Choose some inital beta_0 and compute initial loss
-  b.new = beta.init; if(is.null(b.new)) b.new = runif(P)
-  l.new = loss(b.new)
+  b.new = initialize.beta(beta.init, x); l.new = loss(b.new)
   
   # Update iteration and replace old parameters by previous until convergence
   i = 0L; while (TRUE) { i = i + 1L; l.old = l.new; b.old = b.new

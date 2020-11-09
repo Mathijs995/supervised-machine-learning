@@ -1,5 +1,6 @@
 grid.search.cross.validation = function(x, y, estimator, params.list,
-  n.folds=10, ind.metric, comb.metric, fold.id=NULL, force=T, verbose=F, ...) {
+  n.folds=10, ind.metric, comb.metric, fold.id=NULL, force=T, verbose=F,
+  heatmap=F, plot.coef=F, ...) {
   # Implementation of hyperparameter tuning using grid search using K-fold
   # cross-validation for given data, a given estimator, and given metrics.
   #
@@ -18,14 +19,22 @@ grid.search.cross.validation = function(x, y, estimator, params.list,
   #   force:       Indicator whether not to terminate when encountering errors.
   #                Default is T, that is, errors are skipped with warning.
   #   verbose:     Indicator for displaying progress bar. Default is FALSE.
+  #   heatmap:     Indicator for whether or not to display a heatmap of the
+  #                gridsearch outcomes.
+  #   plot.coef:   Indicator for whether or not to display optimal coefficients.
   #   ...:         Additional arguments that can be passed to the estimator.
   #
   # Output:
   #   Dataframe containing the results of the linear regression model with
   #   elastic net penalty term solved using the MM algorithm.
   
+  # Install and load dependencies
+  while (!require('dplyr')) install.packages('dplyr', quiet=T)
+  while (!require('ggplot2')) install.packages('ggplot2', quiet=T)
+  while (!require('latex2exp')) install.packages('latex2exp')
+  
   # Define constants
-  y = data.matrix(y); x = data.matrix(x); N = nrow(x); best.metric = Inf
+  y = data.matrix(y); x = data.matrix(x); N = nrow(x); b.metric = Inf
   
   # Specify fold ids if not given and initialize metrics and ids vector
   if(is.null(fold.id)) fold.id = ((1:N) %% n.folds + 1)[sample(N, N)]
@@ -34,7 +43,8 @@ grid.search.cross.validation = function(x, y, estimator, params.list,
   for (fold in 1:n.folds) test.ids[fold, ] = (fold.id == fold)
   
   # Create grid for cross validation search
-  grid = expand.grid(params.list); n.combs = nrow(grid)
+  grid = expand.grid(params.list)
+  n.combs = nrow(grid); metric = rep(NULL, n.combs)
   
   # If verbose, initialize progress bar
   if (verbose) pb = dplyr::progress_estimated(n.combs * n.folds)
@@ -45,14 +55,10 @@ grid.search.cross.validation = function(x, y, estimator, params.list,
     # Apply cross validation and if verbose, update progress bar
     for (fold in 1:n.folds) { if (verbose) pb$tick()$print()
       
-      # Create training and test set
-      x.train = x[-test.ids[fold, ], ]; x.test = x[test.ids[fold, ], ]
-      y.train = y[-test.ids[fold, ]]; y.test = y[test.ids[fold, ]]
-      
       # Apply estimator to training data
       b = tryCatch(
-        do.call(estimator, c(list(x=x.train, y=y.train), as.list(grid[i, ]),
-          list(...)))$beta,
+        do.call(estimator, c(list(x=x[-test.ids[fold, ], ],
+          y=y[-test.ids[fold, ]]), as.list(grid[i, ]), list(...)))$beta,
         error = function(e) {
           warning(paste('Failed for', paste(names(params.list), '=', grid[i, ],
             collapse=', ')))
@@ -63,16 +69,36 @@ grid.search.cross.validation = function(x, y, estimator, params.list,
       )
       
       # Store performance on test data
-      metrics[fold] = ifelse(is.null(b), Inf, ind.metric(b, x.test, y.test))
+      metrics[fold] = ifelse(is.null(b), Inf, ind.metric(b,
+        x[test.ids[fold, ], ], y[test.ids[fold, ]]))
     }
     
     # Combine performances on folds to overall performance
-    metric = comb.metric(metrics)
+    metric[i] = comb.metric(metrics)
     
     # Update best hyperparameters if improvement
-    if (metric < best.metric) { best.metric = metric; best.params = grid[i, ]}
+    if (metric[i] < b.metric) { b.metric = metric[i]; b.params = grid[i, ]}
   }
   
-  # Return best hyperparameters
-  if (length(params.list) > 1) return(c(best.params)); return(best.params)
+  # Plot heatmaps if required
+  combs = combn(names(params.list), 2); grid$metric = metric
+  if (heatmap) for (i in 1:ncol(combs)) print(ggplot(data = grid, aes_string(
+    x=combs[1, i], y=combs[2, i])) + geom_tile(aes(color=metric, fill=metric)) +
+    scale_y_continuous(trans='log10'))
+  
+  # Estimate best beta and if required, plot outcomes
+  best.b = do.call(estimator, c(list(x=x, y=y), as.list(b.params),
+    list(...)))$beta
+  if (plot.coef) print(ggplot(data.frame(y=colnames(x), b=as.vector(best.b)),
+    aes(b, y)) + geom_col() + ylab('Expl. variable') + xlab(TeX('$\\beta$')))
+  
+  # Reformat optimal hyperparameters
+  if (length(params.list) > 1) b.params = c(b.params)
+  
+  return(list(
+    'beta' = best.b,
+    'hyperparameters' = b.params,
+    'metric' = b.metric
+    
+  ))
 }
