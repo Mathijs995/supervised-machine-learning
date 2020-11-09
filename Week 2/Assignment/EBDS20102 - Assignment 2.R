@@ -19,6 +19,7 @@ setwd(paste0(BASE.DIR, 'Supervised Machine Learning/', WEEK, '/Assignment'))
 
 # Specify options
 options(scipen=999)
+set.seed(1234)
 
 ################################################################################
 # Load dependencies
@@ -72,7 +73,6 @@ gscv.own = grid.search.cross.validation(scale(x), scale(y), elastic.net.lm,
   params.list, ind.metric=lm.mse, comb.metric=root.mean, fold.id=fold.id,
   verbose=T, force=T, heatmap=T, heat.scale=heat.scale, plot.coef=T,
   intercept=F, standardize=F)
-print('Hyperparameter tuning using own estimator')
 progress.str(list(c('Alpha', gscv.own$params$alpha), c('Lambda',
   gscv.own$params$lambda)))
 
@@ -81,7 +81,6 @@ gscv.glm = grid.search.cross.validation(scale(x), scale(y), glmnet,
   params.list, ind.metric=lm.mse, comb.metric=root.mean, fold.id=fold.id,
   verbose=T, force=T, heatmap=T, heat.scale=heat.scale, plot.coef=T,
   intercept=F, standardize=F)
-print('Hyperparameter tuning using glmnet')
 progress.str(list(c('Alpha', gscv.glm$params$alpha), c('Lambda',
   gscv.glm$params$lambda)))
 

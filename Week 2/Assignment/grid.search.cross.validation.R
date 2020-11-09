@@ -71,7 +71,7 @@ grid.search.cross.validation = function(x, y, estimator, params.list,
       )
       
       # Store performance on test data
-      metrics[fold] = ifelse(is.null(b), Inf, ind.metric(b,
+      metrics[fold] = ifelse(is.null(b), Inf, ind.metric(as.vector(b),
         x[test.ids[fold, ], ], y[test.ids[fold, ]]))
     }
     
