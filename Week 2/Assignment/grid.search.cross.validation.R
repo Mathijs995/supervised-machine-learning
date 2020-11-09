@@ -57,42 +57,37 @@ grid.search.cross.validation = function(x, y, estimator, params.list,
     # Apply cross validation and if verbose, update progress bar
     for (fold in 1:n.folds) { if (verbose) pb$tick()$print()
       
-      # Apply estimator to training data
-      b = tryCatch(
-        do.call(estimator, c(list(x=x[-test.ids[fold, ], ],
+      # Compute individual metric on fold
+      metrics[fold] = tryCatch(
+        ind.metric(do.call(estimator, c(list(x=x[-test.ids[fold, ], ],
           y=y[-test.ids[fold, ]]), as.list(grid[i, ]), list(...)))$beta,
+          x[test.ids[fold, ], ], y[test.ids[fold, ]]),
         error = function(e) {
           warning(paste('Failed for', paste(names(params.list), '=', grid[i, ],
             collapse=', ')))
-          if (force & grepl('.*singular.*', e$message, ignore.case=T))
-            return(NULL)
+          if (force & grepl('.*singular.*', e$message)) return(Inf)
           stop(e)
         }
       )
-      
-      # Store performance on test data
-      metrics[fold] = ifelse(is.null(b), Inf, ind.metric(as.vector(b),
-        x[test.ids[fold, ], ], y[test.ids[fold, ]]))
     }
     
     # Combine performances on folds to overall performance
     metric[i] = comb.metric(metrics)
-    
-    # Update best hyperparameters if improvement
-    if (metric[i] < b.metric) { b.metric = metric[i]; b.params = grid[i, ]}
   }
+  
+  # Extract optimal hyperparameters
+  best.id = which(min(metric)); b.metric = metric[best.id]; b.params = grid[i, ]
   
   # Plot heatmaps if required
   combs = combn(names(params.list), 2); grid$metric = metric
   if (heatmap) for (i in 1:ncol(combs)) {
-    col.x = combs[1, i]
-    col.y = combs[2, i]
+    col.x = combs[1, i]; col.y = combs[2, i]
     p = ggplot(data = grid, aes_string(x=col.x, y=col.y)) + geom_tile(aes(
       color=metric, fill=metric)) + ylab(TeX(paste0('$\\', col.y, '$'))) +
       xlab(TeX(paste0('$\\', col.x, '$')))
     if (!is.null(heat.scale))
-      p = p + scale_y_continuous(trans=heat.scale[col.y]) +
-        scale_x_continuous(trans=heat.scale[col.x])
+      p = p + scale_y_continuous(trans=heat.scale[col.y]) + 
+      scale_x_continuous(trans=heat.scale[col.x])
     print(p)
   }
   
@@ -109,6 +104,5 @@ grid.search.cross.validation = function(x, y, estimator, params.list,
     'beta' = best.b,
     'params' = b.params,
     'metric' = b.metric
-    
   ))
 }

@@ -26,7 +26,8 @@ ridge.lm = function(x, y, lambda, intercept=F, standardize=T, descale=T,
   y = create.y(y, intercept, standardize)
   
   # Derive beta estimate
-  b.new = solve(crossprod(x) + lambda * diag(ncol(x)), crossprod(x, y))
+  b.new = solve(crossprod(x) + nrow(x) * lambda / 2 * diag(ncol(x)),
+    crossprod(x, y))
   
   # Set elements smaller than beta.tol to zero
   b.new[abs(b.new) < beta.tol] = 0

@@ -43,13 +43,13 @@ elastic.net.lm = function(x, y, lambda, alpha, intercept=F, standardize=T,
   # Define constants
   N = nrow(x); P = ncol(x); if (!is.null(seed)) set.seed(seed)
   lambda.l1 = lambda * alpha; lambda.l2 = lambda * (1 - alpha)
-  lambda.l2.I = diag(rep(lambda.l2, P)); if (intercept) lambda.l2.I[1,1] = 0
-  inv.N.Xt.X = crossprod(x) / N; inv.N.Xt.y = crossprod(x, y) / N
+  lambda.l2.I = diag(rep(N * lambda.l2, P)); if (intercept) lambda.l2.I[1,1] = 0
+  Xt.X = crossprod(x); Xt.y = crossprod(x, y)
   
   # Define helper functions for computing specific expressions and loss
   lambda.l1.D = function(beta) {
     beta[abs(beta) < eps] = eps
-    lambda.l1.D = diag(lambda.l1 / abs(beta))
+    lambda.l1.D = diag(N * lambda.l1 / abs(beta))
     if (intercept) lambda.l1.D[1,1] = 0
     return(lambda.l1.D)
   }
@@ -65,7 +65,7 @@ elastic.net.lm = function(x, y, lambda, alpha, intercept=F, standardize=T,
   i = 0L; while (TRUE) { i = i + 1L; l.old = l.new; b.old = b.new
   
     # Update parameters, loss and delta
-    b.new = solve(inv.N.Xt.X + lambda.l1.D(b.old) + lambda.l2.I, inv.N.Xt.y)
+    b.new = solve(Xt.X + lambda.l1.D(b.old) + lambda.l2.I, Xt.y)
     l.new = loss(b.new); diff = l.old - l.new
     
     # Display progress if verbose
