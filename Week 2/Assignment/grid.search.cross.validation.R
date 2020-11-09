@@ -1,6 +1,6 @@
 grid.search.cross.validation = function(x, y, estimator, params.list,
   n.folds=10, ind.metric, comb.metric, fold.id=NULL, force=T, verbose=F,
-  heatmap=F, plot.coef=F, ...) {
+  heatmap=F, heat.scale=NULL, plot.coef=F, ...) {
   # Implementation of hyperparameter tuning using grid search using K-fold
   # cross-validation for given data, a given estimator, and given metrics.
   #
@@ -21,6 +21,8 @@ grid.search.cross.validation = function(x, y, estimator, params.list,
   #   verbose:     Indicator for displaying progress bar. Default is FALSE.
   #   heatmap:     Indicator for whether or not to display a heatmap of the
   #                gridsearch outcomes.
+  #   heat.scale:  Optional argument to specify the scale used in the heatmap.
+  #                Default is NULL.
   #   plot.coef:   Indicator for whether or not to display optimal coefficients.
   #   ...:         Additional arguments that can be passed to the estimator.
   #
@@ -82,9 +84,17 @@ grid.search.cross.validation = function(x, y, estimator, params.list,
   
   # Plot heatmaps if required
   combs = combn(names(params.list), 2); grid$metric = metric
-  if (heatmap) for (i in 1:ncol(combs)) print(ggplot(data = grid, aes_string(
-    x=combs[1, i], y=combs[2, i])) + geom_tile(aes(color=metric, fill=metric)) +
-    scale_y_continuous(trans='log10'))
+  if (heatmap) for (i in 1:ncol(combs)) {
+    col.x = combs[1, i]
+    col.y = combs[2, i]
+    p = ggplot(data = grid, aes_string(x=col.x, y=col.y)) + geom_tile(aes(
+      color=metric, fill=metric)) + ylab(TeX(paste0('$\\', col.y, '$'))) +
+      xlab(TeX(paste0('$\\', col.x, '$')))
+    if (!is.null(heat.scale))
+      p = p + scale_y_continuous(trans=heat.scale[col.y]) +
+        scale_x_continuous(trans=heat.scale[col.x])
+    print(p)
+  }
   
   # Estimate best beta and if required, plot outcomes
   best.b = do.call(estimator, c(list(x=x, y=y), as.list(b.params),
@@ -97,7 +107,7 @@ grid.search.cross.validation = function(x, y, estimator, params.list,
   
   return(list(
     'beta' = best.b,
-    'hyperparameters' = b.params,
+    'params' = b.params,
     'metric' = b.metric
     
   ))
