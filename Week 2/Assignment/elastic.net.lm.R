@@ -41,7 +41,7 @@ elastic.net.lm = function(x, y, lambda, alpha, intercept=F, standardize=T,
   y = create_y(y, intercept, standardize)
   
   # Define constants
-  N = nrow(x); P = ncol(x)
+  N = nrow(x); P = ncol(x); if (!is.null(seed)) set.seed(seed)
   lambda.l1 = lambda * alpha; lambda.l2 = lambda * (1 - alpha)
   lambda.l2.I = diag(rep(lambda.l2, P)); if (intercept) lambda.l2.I[1,1] = 0
   inv.N.Xt.X = crossprod(x) / N; inv.N.Xt.y = crossprod(x, y) / N

@@ -6,7 +6,7 @@
 #   Mathijs de Jong
 #   Eva Mynott
 #
-# DATE: 2020-11-03
+# DATE: 2020-11-08
 ################################################################################
 
 ################################################################################
@@ -14,7 +14,6 @@
 ################################################################################
 
 # Specify working directory
-BASE.DIR = '~/Google Drive/Tinbergen - MPhil/'
 WEEK = 'Week 2'
 setwd(paste0(BASE.DIR, 'Supervised Machine Learning/', WEEK, '/Assignment'))
 

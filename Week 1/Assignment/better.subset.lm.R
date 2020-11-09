@@ -1,54 +1,40 @@
-better.subset.lm = function(X, y, m.vals, b.init=NULL, seed=NULL, tol=1e-6,
-  verbose=0) {
+better.subset.lm = function(X, y, m.vals, intercept=T, standardize=F,
+  b.init=NULL, seed=NULL, tol=1e-6, verbose=0) {
   # Implementation of the better subsets selection estimator by Xiong 2014.
   #
   # Inputs:
-  #   X:          Table containing explanatory variables.
-  #   y:          Column, vector or list containing dependent variables.
-  #   m.vals:     Vector containing number of regressors to select.
-  #   b.init:     Optional initial values of betas. If NULL, a random beta is
-  #               sampled from the continuous uniform distribution on the
-  #               interval [0, 1] with m non-zero elements for each element m
-  #               in m.vals. Default is NULL.
-  #   seed:       Optional seed, used for generating the random initial beta.
-  #               Ignored when an initial beta is provided. Default is NULL.
-  #   tol:        Tolerated rounding error, default is 1e-6.
-  #   verbose:    Integer indicating the step-size of printing iterations.
+  #   X:            Table containing explanatory variables.
+  #   y:            Column, vector or list containing dependent variables.
+  #   m.vals:       Vector containing number of regressors to select.
+  #   intercept:    Indicator for whether or not to add an intercept. Default
+  #                 is FALSE. If TRUE, standardize is ignored.
+  #   standardize:  Indicator for whether or not to scale data. If intercept is
+  #                 TRUE, this argument is ignored. Default is TRUE.
+  #   b.init:       Optional initial values of betas. If NULL, a random beta is
+  #                 sampled from the continuous uniform distribution on the
+  #                 interval [0, 1] with m non-zero elements for each element m
+  #                 in m.vals. Default is NULL.
+  #   seed:         Optional seed, used for generating the random initial beta.
+  #                 Ignored when an initial beta is provided. Default is NULL.
+  #   tol:          Tolerated rounding error, default is 1e-6.
+  #   verbose:      Integer indicating the step-size of printing iterations.
   #
   # Output:
   #   Dataframe containing the results of the best beta parameter obtained
   #   through better subset regression.
   
+  # Import our own shared own functions
+  source('../../base.R'); descale = function(beta) descale.beta(beta, x, y)
   
-  # Initiallize algorithm and define helper functions
-  ## Ensure data is numerical and scale to speed up MM algorithm
-  y = data.matrix(y); X = data.matrix(X); y.scale = scale(y); X.scale = scale(X)
+  # Add intercept or standarize data if necessary
+  x = create_x(x, intercept, standardize)
+  y = create_y(y, intercept, standardize)
   
   ## Define constants
   rss_tot = sum((y - mean(y)) ^ 2); Xt.X.scale = crossprod(X.scale)
   inv.lambda = 1 / eigen(Xt.X.scale)$values[1]; N = nrow(X); P = ncol(X)
   inv.lambda.Xt.y.scale = inv.lambda * crossprod(X.scale, y.scale)
   best.metric = -Inf; if (!is.null(seed)) set.seed(seed)
-  
-  ## Define helper functions for computing statistics, descaling and printing
-  rss = function(beta) sum((y.scale - X.scale %*% beta) ^ 2)
-  r2 = function(beta) 1 - sum((y - cbind(1, X) %*% beta) ^ 2) / rss_tot
-  adj.r2 = function(beta, m) 1 - (1 - r2(beta)) * (N - 1) / (N - m - 1)
-  descale.b = function(b) {
-    b = sd(y) * b / apply(X, 2, sd)
-    b = c(mean(y) - sum(colMeans(X) * b), b)
-    names(b) = c('(Intercept)', colnames(X))
-    return(b)
-  }
-  progress.line = function(var, val, var_width=21, width=15, nsmall=0)
-    paste0(format(paste0(var, ':'), width=var_width), format(val, width=width,
-      justify='right', nsmall=nsmall), '\n')
-  progress.str = function(m, k, rss.new, rss.old, delta) {
-    paste0(progress.line('Number of regressors', m),
-      progress.line('Iteration', k), progress.line('RSS.new', rss.new,
-      nsmall=10), progress.line('RSS.old', rss.old, nsmall=10),
-      progress.line('delta', delta, nsmall=10))
-  }
   
   # Exercute algorithm for all possible number of explanatory variables
   for (m in m.vals) {
@@ -86,7 +72,7 @@ better.subset.lm = function(X, y, m.vals, b.init=NULL, seed=NULL, tol=1e-6,
     }
     
     # 'Descale' estimator to original data
-    b = descale.b(b.new)
+    b = descale(b.new)
     
     # Update best estimate if better performance
     metric = adj.r2(b, m)

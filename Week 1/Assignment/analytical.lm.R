@@ -1,37 +1,39 @@
-analytical.lm = function(X, y, intercept=T) {
+analytical.lm = function(X, y, intercept=T, standardize=F) {
   # Ordinary linear regression estimator obtained using the analytical solution.
   #
   # Inputs:
-  #   X:          Table containing explanatory variables.
-  #   y:          Column, vector or list containing dependent variables.
-  #   intercept:  Indicates whether to add an intercept to the model, default is
-  #               TRUE.
+  #   x:            Table containing numerical explanatory variables.
+  #   y:            Column containing a numerical dependent variable.
+  #   lambda:       Penalty scaling constant.
+  #   alpha:        Scalar of penalty for L1-norm of beta. Note that the scalar
+  #                 assigned to the L2-norm is equal to (1 - alpha) / 2.
+  #   intercept:    Indicator for whether or not to add an intercept. Default
+  #                 is TRUE. If TRUE, standardize is ignored.
+  #   standardize:  Indicator for whether or not to scale data. If intercept is
+  #                 TRUE, this argument is ignored. Default is FALSE.
   #
   # Output:
-  #   List containing the beta estimates, the p-values for the test of
-  #   individual significance, the in-sample residuals, the residual sum of
-  #   sum of squares, and the standard errors of the parameter estimates, and
-  #   the t-values for the test of individual significance.
+  #   Dataframe containing the results of the linear regression model with
+  #   estimated using the analytical solution.
   
-  # Transform data to numeric
-  y = data.matrix(y)
-  X = data.matrix(X)
+  # Import our own shared own functions
+  source('../../base.R'); descale = function(beta) descale.beta(beta, x, y)
   
-  # Add intercept if required
-  if (intercept) X = cbind("(Intercept)" = 1, X)
+  # Add intercept or standarize data if necessary
+  x = create_x(x, intercept, standardize)
+  y = create_y(y, intercept, standardize)
   
   # Construct constants
-  inv.Xt.X = solve(crossprod(X))
   N = nrow(X)
   
   # Compute OLS estimator
-  b = inv.Xt.X %*% crossprod(X, y)
+  b = solve(crossprod(X)) %*% crossprod(X, y)
   
   # Compute standard errors
   e = y - X %*% b
   
   # Compute residual sum of squares
-  rss = sum(e ^ 2)
+  rss = rss(b, X, y)
   
   # Compute standard errors of beta
   cov.b = inv.Xt.X * rss / N
@@ -42,12 +44,13 @@ analytical.lm = function(X, y, intercept=T) {
   
   # Return regression output
   return(list(
+    "adj.r2" = adj.r2(b, X, y),
     "coefficients" = b,
     "covariance" = cov.b,
     "p-values" = 2 * pnorm(-abs(t.b)),
     "residuals" = e,
     "rss" = rss,
-    "r2" = 1 - rss / sum((y - mean(y)) ^ 2),
+    "r2" = r2(b, X, y),
     "standard errors" = std.b,
     "t-values" = t.b
   ))
