@@ -39,8 +39,7 @@ grid.search.cross.validation = function(x, y, estimator, params.list,
   y = data.matrix(y); x = data.matrix(x); N = nrow(x); b.metric = Inf
   
   # Specify fold ids if not given and initialize metrics and ids vector
-  if(is.null(fold.id)) fold.id = ((1:N) %% n.folds + 1)[sample(N, N)]
-  else n.folds =length(unique(fold.id))
+  if(is.null(fold.id)) fold.id = ((1:N) %% n.folds + 1)[sample(N, N)] else n.folds =length(unique(fold.id))
   metrics = rep(NULL, n.folds); test.ids = matrix(nrow=n.folds, ncol=N)
   for (fold in 1:n.folds) test.ids[fold, ] = (fold.id == fold)
   
@@ -59,8 +58,8 @@ grid.search.cross.validation = function(x, y, estimator, params.list,
       
       # Compute individual metric on fold
       metrics[fold] = tryCatch(
-        ind.metric(do.call(estimator, c(list(x=x[-test.ids[fold, ], ],
-          y=y[-test.ids[fold, ]]), as.list(grid[i, ]), list(...)))$beta,
+        ind.metric(do.call(estimator, c(list(x=x[!test.ids[fold, ], ],
+          y=y[!test.ids[fold, ]]), as.list(grid[i, ]), list(...)))$beta,
           x[test.ids[fold, ], ], y[test.ids[fold, ]]),
         error = function(e) {
           warning(paste('Failed for', paste(names(params.list), '=', grid[i, ],
@@ -76,7 +75,7 @@ grid.search.cross.validation = function(x, y, estimator, params.list,
   }
   
   # Extract optimal hyperparameters
-  best.id = which(min(metric)); b.metric = metric[best.id]; b.params = grid[i, ]
+  b.id = which.min(metric); b.metric = metric[b.id]; b.params = grid[b.id, ]
   
   # Plot heatmaps if required
   combs = combn(names(params.list), 2); grid$metric = metric
@@ -95,7 +94,8 @@ grid.search.cross.validation = function(x, y, estimator, params.list,
   best.b = do.call(estimator, c(list(x=x, y=y), as.list(b.params),
     list(...)))$beta
   if (plot.coef) print(ggplot(data.frame(y=colnames(x), b=as.vector(best.b)),
-    aes(b, y)) + geom_col() + ylab('Expl. variable') + xlab(TeX('$\\beta$')))
+    aes(b, y)) + geom_col() + ylab('Expl. variable') + xlab(TeX('$\\beta$')) +
+    xlim(-0.075, 0.075))
   
   # Reformat optimal hyperparameters
   if (length(params.list) > 1) b.params = c(b.params)

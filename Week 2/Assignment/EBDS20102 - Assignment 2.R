@@ -28,6 +28,7 @@ set.seed(42)
 # Install and load packages
 while (!require('glmnet')) install.packages('glmnet', quiet=T)
 while (!require('SVMMaj')) install.packages('SVMMaj', quiet=T)
+while (!require('xtable')) install.packages('xtable', quiet=T)
 
 # Load dependencies
 source('../../base.R')
@@ -65,12 +66,11 @@ N = nrow(x); n.folds = 5; fold.id = ((1:N) %% n.folds + 1)[sample(N, N)]
 ################################################################################
 
 # Define metric functions
-lm.mse = function(beta, x, y) mean(sum((y - x %*% beta) ^ 2))
-root.mean = function(x) sqrt(mean(x))
+lm.rmse = function(beta, x, y) sqrt(mean(sum((y - x %*% beta) ^ 2)))
 
 # Hyperparameter tuning using estimator based on MM algorithm
 gscv.own = grid.search.cross.validation(scale(x), scale(y), elastic.net.lm,
-  params.list, ind.metric=lm.mse, comb.metric=root.mean, fold.id=fold.id,
+  params.list, ind.metric=lm.rmse, comb.metric=mean, fold.id=fold.id,
   verbose=T, force=T, heatmap=T, heat.scale=heat.scale, plot.coef=T,
   intercept=F, standardize=F)
 progress.str(list(c('Alpha', gscv.own$params$alpha), c('Lambda',
@@ -78,7 +78,7 @@ progress.str(list(c('Alpha', gscv.own$params$alpha), c('Lambda',
 
 # Hyperparameter tuning using glmnet estimator
 gscv.glm = grid.search.cross.validation(scale(x), scale(y), glmnet,
-  params.list, ind.metric=lm.mse, comb.metric=root.mean, fold.id=fold.id,
+  params.list, ind.metric=lm.rmse, comb.metric=mean, fold.id=fold.id,
   verbose=T, force=T, heatmap=T, heat.scale=heat.scale, plot.coef=T,
   intercept=F, standardize=F)
 progress.str(list(c('Alpha', gscv.glm$params$alpha), c('Lambda',
@@ -100,9 +100,13 @@ res.glm.glm = glmnet(scale(x), scale(y), alpha=gscv.glm$params$alpha,
   lambda=gscv.glm$params$lambda, standardize=F)
 
 # Compare implementation of MM algorithm to glmnet outcome
-data.frame(
+res.table = data.frame(
   'own.own' = c(res.own.own$a0, res.own.own$beta),
-  #'own.glm' = c(res.own.glm$a0, res.own.glm$beta),
+  'own.glm' = c(res.own.glm$a0, res.own.glm$beta),
   'glm.own' = c(res.glm.own$a0, as.vector(res.glm.own$beta)),
   'glm.glm' = c(res.glm.glm$a0, as.vector(res.glm.glm$beta))
 )
+rownames(res.table) = paste0('\\texttt{', c('Intercept', colnames(x)), '}')
+
+# Export table to LaTeX
+xtable(res.table, digits=6)
