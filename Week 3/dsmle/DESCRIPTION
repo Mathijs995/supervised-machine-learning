@@ -1,0 +1,21 @@
+Package: dsmle
+Type: Package
+Title: Data Science & Machine Learning Essentials
+Version: 1.0-4
+Date: 2018-05-12
+Author: Patrick J. F. Groenen [aut, cre], Pieter Schoonees [aut, cre]
+Authors@R: c(person("Patrick J.F.", "Groenen", role = c("aut", "cre"), email =
+                      "groenenr@ese.eur.nl"), person("Pieter", "Schoonees", role = c("aut", "cre")))
+Maintainer: Patrick Groenen <groenen@ese.eur.nl>
+Description: Functions and data for the Data Science and Machine Learning
+    Essentials course of Erasmus Academy 2016.
+Depends: R (>= 3.4.2), glmnet, SVMMaj, ISLR, MASS, car, plotrix, caret,
+        e1071
+License: GPL-2
+LazyData: no
+LazyLoad: yes
+ByteCompile: yes
+NeedsCompilation: no
+Roxygen: list(wrap = FALSE)
+RoxygenNote: 6.0.1
+Packaged: 2018-05-12 10:22:05 UTC; groenen

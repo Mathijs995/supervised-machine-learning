@@ -51,6 +51,8 @@ dep.var = 'GROCERY_sum'; y = df[dep.var]; x = df[colnames(df) != dep.var]
 # OPTIONAL: Remove duplicate columns
 x = x[, -which(duplicated(t(x)))]
 
+dual.ridge.lm(GROCERY_sum ~ AGE9 + DENSITY + EDUC + ETHNIC, df, lambda=1)
+
 # Specify hyperparameter values to consider
 params.length = 100; params.list = list(
   'alpha' = seq(0, 1, length.out=params.length),
