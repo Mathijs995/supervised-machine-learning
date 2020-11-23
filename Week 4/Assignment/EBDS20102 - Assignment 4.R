@@ -26,7 +26,7 @@ set.seed(42)
 ################################################################################
 
 # Install and load packages
-install.packages(setdiff(c('devtools', 'elasticnet', 'SVMMaj'),
+install.packages(setdiff(c('devtools', 'elasticnet', 'kernlab', 'SVMMaj'),
   installed.packages()))
 install.packages(
   'https://cran.r-project.org/src/contrib/Archive/regsel/regsel_0.2.tar.gz',
@@ -36,34 +36,61 @@ install.packages(
 
 # Install and load latest version of own package
 devtools::install_github('Accelerytics/mlkit', upgrade='always', force=T)
-library(mlkit)
 
 ################################################################################
 # Pre-process data
 ################################################################################
 
-# Load data
-df = regsel::bank
+# Specify sample size
+n.train = 400; n.test = 100
+
+# Load data, drop rows containing NaN values and take sample n.obs clients
+df = regsel::bank[complete.cases(regsel::bank), ]
+df = df[sample(nrow(df), n.train + n.test), ]
+
+# Reformat data
+df = as.data.frame(cbind(y=ifelse(df$y, 1L, -1L),
+  scale(df[, colnames(df) != 'y'])))
+
+# Extract test and train data
+test.ids = sample(nrow(df), n.test)
+df.test = df[test.ids, ]; df.train = df[-test.ids, ]
+
+# Define formula
 formula = y ~ 0 + .
 
-# Drop rows containing NaN values and take random sample of 1000 clients
-df = df[complete.cases(df), ]
-df = df[sample(nrow(df), 1000), ]
-df[colnames(df) != 'y'] = scale(df[colnames(df) != 'y'])
 
 ################################################################################
-# Comparison of different implementations
+# Pre-process data
 ################################################################################
 
-res = SVMMaj::svmmaj(df[, colnames(df) != 'y'], df$y, hinge='absolute')
-mlkit::svm.bin(formula, df, lambda=1, loss='abs', verbose=25,
-  v.init=c(0, res$beta))
+# Specify hyperparameter values to consider
+params.length = 3
+params.list = list(
+  lambda = 2 ^ seq(5, -5, length.out = 20),
+  kernel = c(kernlab::vanilladot, kernlab::polydot, kernlab::rbfdot),
+  kernel.offset = 1,
+  kernel.degree = c(0.5, 2, 3),
+  kernel.scale =  1,
+  kernel.sigma = c(0.5, 1, 2),
+  hinge = c('absolute', 'quadratic', 'huber'),
+  hinge.delta = c(0.5, 2)
+)
 
-mlkit::svm.bin(formula, df, lambda=1, verbose=1)
-SVMMaj::svmmaj(df[, colnames(df) != 'y'], df$y, scale='zscore',
-  hinge='quadratic')
+# Specify fold ids
+N = nrow(df.train); n.folds = 3; fold.id = ((1:N) %% n.folds + 1)[sample(N, N)]
 
-res = SVMMaj::svmmaj(df[, colnames(df) != 'y'], df$y, hinge='huber',
-  hinge.delta=2)
-mlkit::svm.bin(formula, df, lambda=1, loss='hub', huber.k=2, verbose=1,
-  v.init=c(0, res$beta))
+################################################################################
+# Hyperparameter tuning
+################################################################################
+
+# Define metric functions
+mis.rate = function(y.hat, y) sum(y != ifelse(y.hat >= 0, 1L, -1L)) / length(y)
+
+# Grid search 3-fold cross-validation
+gscv.svm = grid.search.cross.validation(formula, df.train, SVMMaj::svmmaj,
+  params.list, ind.metric=mis.rate, fold.id=fold.id, force=T, verbose=T,
+  use.formula=F)
+
+# Display results
+print(gscv.svm)
