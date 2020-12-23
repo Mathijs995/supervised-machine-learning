@@ -1,0 +1,512 @@
+# Step 2: Compute lambda as the largest eigenvalue of X.T @ X
+inv.lambda = 1 / eigen(X.TX)$values[1]
+# Step 3: Compute RSS(beta_0)
+rss.new = rss(b.new)
+# Step 4: Set k = 1
+k = 1
+# Step 5: Update beta_k until convergence
+while (k == 1 || ((rss.old - rss.new) / rss.old > tol)) {
+k = k + 1
+b.old = b.new
+b.new = b.old - inv.lambda * (X.TX %*% b.old - X.Ty)
+rss.old = rss.new
+rss.new = rss(b.new)
+# Display progress if verbose
+if (verbose) {
+if (k %% verbose == 0) {
+cat(paste0('Iteration: ', k, '\nRSS_new: ', rss.new, '\nRSS_old: ',
+rss.old, '\nRSS_old - RSS_new: ', rss.old - rss.new, '\n\n'))
+}
+}
+}
+# Ensure information of last iteration is shown
+if (verbose & (k %% verbose != 0)) cat(paste0('Iteration: ', k, '\nRSS_new: ',
+rss.new, '\nRSS_old: ', rss.old, '\nRSS_old - RSS_new: ', rss.old - rss.new,
+'\n\n'))
+if (scale) {
+scale_y = attributes(y)$`scaled:scale`
+mean_y = attributes(y)$`scaled:center`
+b.new = rbind("(Intercept)" = mean_y / scale_y, b.new)
+}
+# Return beta estimate
+return(b.new)
+}
+# Estimate OLS estimator using the MM algorithm
+b = mm.lm(X, y, verbose=1)
+b
+################################################################################
+# Implementation of the OLS estimator obtained using the MM algorithm
+################################################################################
+mm.lm = function(X, y, scale=T, intercept=F, tol=1e-6, verbose=0) {
+# Ordinary least squares estimator obtained using the MM algorithm.
+#
+# NOTE: This implementation only provides correct estimates for standardized
+# inputs.
+#
+# Inputs:
+#   X:          Table containing explanatory variables.
+#   y:          Column, vector or list containing dependent variables.
+#   scale:      Indicates whether to scale the data, default is TRUE.
+#   intercept:  Indicates whether to add an intercept to the model, default is
+#               FALSE. This parameter is ignored when scale is TRUE.
+#   tol:        Tolerated rounding error, default is 1e-6.
+#   verbose:    Integer indicating the step-size of printing iterations.
+#
+# Output:
+#   Beta estimate of the linear regression model
+# Step 0: Initiallize algorithm and define helper function
+## Transform data to numeric
+y = data.matrix(y)
+X = data.matrix(X)
+## Scale data or add intercept if required
+if (scale) {
+X = scale(X)
+y = scale(y)
+} else if (intercept) X = cbind("(Intercept)" = 1, X)
+## Define constants used in estimation
+X.TX = t(X) %*% X
+X.Ty = t(X) %*% y
+rss.old = NULL
+## Define helper function for computing RSS
+rss = function(beta) {
+tmp = y - X %*% beta
+return((t(tmp) %*% tmp)[1, 1])
+}
+# Step 1: Choose some inital beta_0
+b.new = runif(dim(X)[2])
+# Step 2: Compute lambda as the largest eigenvalue of X.T @ X
+inv.lambda = 1 / eigen(X.TX)$values[1]
+# Step 3: Compute RSS(beta_0)
+rss.new = rss(b.new)
+# Step 4: Set k = 1
+k = 1
+# Step 5: Update beta_k until convergence
+while (k == 1 || ((rss.old - rss.new) / rss.old > tol)) {
+k = k + 1
+b.old = b.new
+b.new = b.old - inv.lambda * (X.TX %*% b.old - X.Ty)
+rss.old = rss.new
+rss.new = rss(b.new)
+# Display progress if verbose
+if (verbose) {
+if (k %% verbose == 0) {
+cat(paste0('Iteration: ', k, '\nRSS_new: ', rss.new, '\nRSS_old: ',
+rss.old, '\nRSS_old - RSS_new: ', rss.old - rss.new, '\n\n'))
+}
+}
+}
+# Ensure information of last iteration is shown
+if (verbose & (k %% verbose != 0)) cat(paste0('Iteration: ', k, '\nRSS_new: ',
+rss.new, '\nRSS_old: ', rss.old, '\nRSS_old - RSS_new: ', rss.old - rss.new,
+'\n\n'))
+if (scale) {
+scale_y = attributes(y)$`scaled:scale`
+mean_y = attributes(y)$`scaled:center`
+b.new = rbind("(Intercept)" = mean_y / sqrt(scale_y), b.new)
+}
+# Return beta estimate
+return(b.new)
+}
+# Estimate OLS estimator using the MM algorithm
+b = mm.lm(X, y, verbose=1)
+b
+summary(lm('airq ~ 1 + .', as.data.frame(data.matrix(df))))
+X = subset(df, select = -c(airq))
+X = data.matrix(X)
+X = scale(X)
+# Define dependent and independent variables
+y = df$airq
+X = subset(df, select = -c(airq))
+X_dm = data.matrix(X)
+X_scaled = scale(X)
+rescale.coefs <- function(beta, mu, sigma) {
+beta2 <- beta ## inherit names etc.
+beta2[-1] <- sigma[1]*beta[-1]/sigma[-1]
+beta2[1]  <- sigma[1]*beta[1]+mu[1]-sum(beta2[-1]*mu[-1])
+return(beta2)
+}
+X_scaled = scale(X_dm)
+rescale.coefs <- function(beta, mu, sigma) {
+beta2 <- beta ## inherit names etc.
+beta2[-1] <- sigma[1]*beta[-1]/sigma[-1]
+beta2[1]  <- sigma[1]*beta[1]+mu[1]-sum(beta2[-1]*mu[-1])
+return(beta2)
+}
+rescale.coefs <- function(beta, mu, sigma) {
+beta2 <- beta ## inherit names etc.
+beta2[-1] <- sigma[1]*beta[-1]/sigma[-1]
+beta2[1]  <- sigma[1]*beta[1]+mu[1]-sum(beta2[-1]*mu[-1])
+return(beta2)
+}
+icol <- which(colnames(df)=="airq")
+p.order <- c(icol,(1:ncol(df))[-icol])
+m <- colMeans(df)[p.order]
+s <- apply(df,2,sd)[p.order]
+icol <- which(colnames(df)=="airq")
+p.order <- c(icol,(1:ncol(df))[-icol])
+m <- colMeans(data.matrix(df))[p.order]
+s <- apply(data.matrix(df),2,sd)[p.order]
+rescale.coefs(b,m,s)
+summary(lm('airq ~ 1 + .', as.data.frame(data.matrix(df))))
+m
+b[-1]
+m[-1]
+attributes(scale(X))
+attributes(scale(Xy))
+attributes(scale(y))
+################################################################################
+# Implementation of the OLS estimator obtained using the MM algorithm
+################################################################################
+mm.lm = function(X, y, tol=1e-6, verbose=0) {
+# Ordinary least squares estimator obtained using the MM algorithm.
+#
+# NOTE: This implementation only provides correct estimates for standardized
+# inputs.
+#
+# Inputs:
+#   X:          Table containing explanatory variables.
+#   y:          Column, vector or list containing dependent variables.
+#   scale:      Indicates whether to scale the data, default is TRUE.
+#   intercept:  Indicates whether to add an intercept to the model, default is
+#               FALSE. This parameter is ignored when scale is TRUE.
+#   tol:        Tolerated rounding error, default is 1e-6.
+#   verbose:    Integer indicating the step-size of printing iterations.
+#
+# Output:
+#   Beta estimate of the linear regression model
+# Step 0: Initiallize algorithm and define helper function
+## Transform data to scaled numeric
+y = scale(data.matrix(y))
+X = scale(data.matrix(X))
+## Define constants used in estimation
+X.TX = t(X) %*% X
+X.Ty = t(X) %*% y
+rss.old = NULL
+## Define helper function for computing RSS
+rss = function(beta) {
+tmp = y - X %*% beta
+return((t(tmp) %*% tmp)[1, 1])
+}
+# Step 1: Choose some inital beta_0
+b.new = runif(dim(X)[2])
+# Step 2: Compute lambda as the largest eigenvalue of X.T @ X
+inv.lambda = 1 / eigen(X.TX)$values[1]
+# Step 3: Compute RSS(beta_0)
+rss.new = rss(b.new)
+# Step 4: Set k = 1
+k = 1
+# Step 5: Update beta_k until convergence
+while (k == 1 || ((rss.old - rss.new) / rss.old > tol)) {
+k = k + 1
+b.old = b.new
+b.new = b.old - inv.lambda * (X.TX %*% b.old - X.Ty)
+rss.old = rss.new
+rss.new = rss(b.new)
+# Display progress if verbose
+if (verbose) {
+if (k %% verbose == 0) {
+cat(paste0('Iteration: ', k, '\nRSS_new: ', rss.new, '\nRSS_old: ',
+rss.old, '\nRSS_old - RSS_new: ', rss.old - rss.new, '\n\n'))
+}
+}
+}
+# Ensure information of last iteration is shown
+if (verbose & (k %% verbose != 0)) cat(paste0('Iteration: ', k, '\nRSS_new: ',
+rss.new, '\nRSS_old: ', rss.old, '\nRSS_old - RSS_new: ', rss.old - rss.new,
+'\n\n'))
+X_mean = attributes(X)$`scaled:center`
+X_scale = attributes(X)$`scaled:scale`
+y_mean = attributes(y)$`scaled:center`
+y_scale = attributes(y)$`scaled:scale`
+b = y_scale * b.new / X_scale
+b = rbind("(Intercept)" = y_mean - sum(mean_X * b), b)
+# Return beta estimate
+return(b)
+}
+# Estimate OLS estimator using the MM algorithm
+mm.lm(X, y, verbose=1)
+################################################################################
+# Implementation of the OLS estimator obtained using the MM algorithm
+################################################################################
+mm.lm = function(X, y, tol=1e-6, verbose=0) {
+# Ordinary least squares estimator obtained using the MM algorithm.
+#
+# NOTE: This implementation only provides correct estimates for standardized
+# inputs.
+#
+# Inputs:
+#   X:          Table containing explanatory variables.
+#   y:          Column, vector or list containing dependent variables.
+#   scale:      Indicates whether to scale the data, default is TRUE.
+#   intercept:  Indicates whether to add an intercept to the model, default is
+#               FALSE. This parameter is ignored when scale is TRUE.
+#   tol:        Tolerated rounding error, default is 1e-6.
+#   verbose:    Integer indicating the step-size of printing iterations.
+#
+# Output:
+#   Beta estimate of the linear regression model
+# Step 0: Initiallize algorithm and define helper function
+## Transform data to scaled numeric
+y = scale(data.matrix(y))
+X = scale(data.matrix(X))
+## Define constants used in estimation
+X.TX = t(X) %*% X
+X.Ty = t(X) %*% y
+rss.old = NULL
+## Define helper function for computing RSS
+rss = function(beta) {
+tmp = y - X %*% beta
+return((t(tmp) %*% tmp)[1, 1])
+}
+# Step 1: Choose some inital beta_0
+b.new = runif(dim(X)[2])
+# Step 2: Compute lambda as the largest eigenvalue of X.T @ X
+inv.lambda = 1 / eigen(X.TX)$values[1]
+# Step 3: Compute RSS(beta_0)
+rss.new = rss(b.new)
+# Step 4: Set k = 1
+k = 1
+# Step 5: Update beta_k until convergence
+while (k == 1 || ((rss.old - rss.new) / rss.old > tol)) {
+k = k + 1
+b.old = b.new
+b.new = b.old - inv.lambda * (X.TX %*% b.old - X.Ty)
+rss.old = rss.new
+rss.new = rss(b.new)
+# Display progress if verbose
+if (verbose) {
+if (k %% verbose == 0) {
+cat(paste0('Iteration: ', k, '\nRSS_new: ', rss.new, '\nRSS_old: ',
+rss.old, '\nRSS_old - RSS_new: ', rss.old - rss.new, '\n\n'))
+}
+}
+}
+# Ensure information of last iteration is shown
+if (verbose & (k %% verbose != 0)) cat(paste0('Iteration: ', k, '\nRSS_new: ',
+rss.new, '\nRSS_old: ', rss.old, '\nRSS_old - RSS_new: ', rss.old - rss.new,
+'\n\n'))
+# Scale estimator back for original data
+X.mean = attributes(X)$`scaled:center`
+X.scale = attributes(X)$`scaled:scale`
+y.mean = attributes(y)$`scaled:center`
+y.scale = attributes(y)$`scaled:scale`
+b = y.scale * b.new / X.scale
+b = rbind("(Intercept)" = y.mean - sum(X.mean * b), b)
+# Return beta estimate
+return(b)
+}
+# Estimate OLS estimator using the MM algorithm
+mm.lm(X, y, verbose=1)
+summary(lm('airq ~ 1 + .', as.data.frame(data.matrix(df))))
+# Estimate OLS estimator using own version of standard OLS
+analytical.lm(X, y)$coefficients
+# Estimate OLS estimator using standard OLS as provided in R
+summary(lm('airq ~ 1 + .', as.data.frame(data.matrix(df))))
+# Estimate OLS estimator using the MM algorithm
+mm.lm(X, y, verbose=1)
+# Estimate OLS estimator using own version of standard OLS
+analytical.lm(X, y)$coefficients
+getwd()
+source('~/Google Drive/Tinbergen - MPhil/Supervised Machine Learning/Week 1/Assignment/EBDS20102 - Exercise week 1.R')
+# Set working directory and laod implementations
+setwd(
+paste0(
+getwd(),
+"/Google Drive/Tinbergen - MPhil/Supervised Machine Learning/Week 1")
+)
+getwd()
+# Set working directory and laod implementations
+setwd(
+paste0(
+getwd(),
+"/Google Drive/Tinbergen - MPhil/Supervised Machine Learning/Week 1"
+)
+)
+setwd('/')
+# Set working directory
+setwd(
+paste0(
+getwd(),
+'/Google Drive/Tinbergen - MPhil/Supervised Machine Learning/Week 1'
+)
+)
+getwd()
+paste0(
+getwd(),
+'/Google Drive/Tinbergen - MPhil/Supervised Machine Learning/Week 1'
+)
+# Set working directory
+setwd(
+paste0(
+getwd(),
+'Google Drive/Tinbergen - MPhil/Supervised Machine Learning/Week 1'
+)
+)
+paste0(
+getwd(),
+'Google Drive/Tinbergen - MPhil/Supervised Machine Learning/Week 1'
+)
+getwd()
+setwd('users/mathijs')
+source('~/.active-rstudio-document')
+install.packages('plm')
+IPS = plm::purtest(df, test='ips', exo='intercept', lags = "AIC",
+pmax = 5)
+summary(IPS)
+df <- read.csv("~/Downloads/df.csv")
+View(df)
+IPS = plm::purtest(df, test='ips', exo='intercept', lags = "AIC",
+pmax = 5)
+df = data.matrix(df)
+IPS = plm::purtest(df, test='ips', exo='intercept', lags = "AIC",
+pmax = 5)
+summary(IPS)
+?purtest
+df = data.matrix(df)
+IPS = plm::purtest(df, test='ips', exo='trend', lags = "AIC", ips.stat='Ztbar')
+summary(IPS)
+View(df)
+df = data.matrix(df[,c('S.Y', 'd.lnY.', 'INF')])
+IPS = plm::purtest(df, test='ips', exo='trend', lags = "AIC", ips.stat='Ztbar')
+summary(IPS)
+df = data.matrix(df[,c('S.Y')])
+IPS = plm::purtest(df, test='ips', exo='trend', lags = "AIC", ips.stat='Ztbar')
+df %>% pivot_wider(names_from = 'Country', values_from = 'S/Y')
+library(dplyr)
+df = read.csv("~/Downloads/df.csv")
+df %>% pivot_wider(names_from = 'Country', values_from = 'S/Y')
+df %>% dplyr::pivot_wider(names_from = 'Country', values_from = 'S/Y')
+library(tidyr)
+df = read.csv("~/Downloads/df.csv")
+df %>% pivot_wider(names_from = 'Country', values_from = 'S/Y')
+View(df)
+df %>% pivot_wider(names_from = 'Country', values_from = 'S.Y')
+df = df.orig %>% pivot_wider(names_from = 'Country', values_from = 'S.Y')[-colnames(df)]
+df.orig = read.csv("~/Downloads/df.csv")
+df = df.orig %>% pivot_wider(names_from = 'Country', values_from = 'S.Y')[-colnames(df)]
+df = df.orig %>% pivot_wider(names_from = 'Country', values_from = 'S.Y')[!colnames(df)]
+df = df[!(colnames(df) %in% colnames(df.orig))]
+IPS = plm::purtest(df, test='ips', exo='trend', lags = "AIC", ips.stat='Ztbar')
+df = df[!(colnames(df) %in% colnames(df.orig))]
+View(df)
+df = df[!(colnames(df) %in% orig.columns)]
+df = read.csv("~/Downloads/df.csv")
+orig.columns = colnames(df)
+df = df %>% pivot_wider(names_from = 'Country', values_from = 'S.Y')
+df = df[!(colnames(df) %in% orig.columns)]
+IPS = plm::purtest(df, test='ips', exo='trend', lags = "AIC", ips.stat='Ztbar')
+View(df)
+reshape2::dcast(mydata, Year ~ Country, value.var="S.Y", fun.aggregate=sum)
+reshape2::dcast(df, Year ~ Country, value.var="S.Y", fun.aggregate=sum)
+reshape2::dcast(df, Year ~ Country, value.var=S.Y, fun.aggregate=sum)
+view(df)
+View(df)
+df = read.csv("~/Downloads/df.csv")
+reshape2::dcast(df, Year ~ Country, value.var=S.Y, fun.aggregate=sum)
+View(df)
+reshape2::dcast(df, Year ~ Country, value.var='S.Y', fun.aggregate=sum)
+IPS = plm::purtest(df, test='ips', exo='trend', lags = "AIC", ips.stat='Ztbar')
+df = read.csv("~/Downloads/df.csv")
+df = reshape2::dcast(df, Year ~ Country, value.var='S.Y', fun.aggregate=sum)
+df = data.matrix(df)
+IPS = plm::purtest(df, test='ips', exo='trend', lags = "AIC", ips.stat='Ztbar')
+summary(IPS)
+View(df)
+df = data.matrix(df[-c(Year)])
+df = reshape2::dcast(df, Year ~ Country, value.var='S.Y', fun.aggregate=sum)
+df = read.csv("~/Downloads/df.csv")
+df = reshape2::dcast(df, Year ~ Country, value.var='S.Y', fun.aggregate=sum)
+df = data.matrix(df[-c(Year)])
+df = data.matrix(df[-Year])
+df = reshape2::dcast(df, Year ~ Country, value.var='S.Y', fun.aggregate=sum)
+df = read.csv("~/Downloads/df.csv")
+df = reshape2::dcast(df, Year ~ Country, value.var='S.Y', fun.aggregate=sum)
+View(df)
+df = data.matrix(df[, -Year])
+df = data.matrix(df[, -c(Year)])
+df = data.matrix(df[, -1])
+IPS = plm::purtest(df, test='ips', exo='trend', lags = "AIC", ips.stat='Ztbar')
+summary(IPS)
+df = read.csv("~/Downloads/df.csv")
+df = data.matrix(df[, -1])
+IPS = plm::purtest(df, test='ips', exo='trend', lags = "AIC", ips.stat='Ztbar')
+summary(IPS)
+df = data.matrix(df[, c('S.Y', 'd.lnY.', 'INF')])
+IPS = plm::purtest(df, test='ips', exo='trend', lags = "AIC", ips.stat='Ztbar')
+summary(IPS)
+IPS.trend = plm::purtest(df, test='ips', exo='intercept', lags = "AIC",
+ips.stat='Ztbar')
+summary(IPS.trend)
+IPS.trend = plm::purtest(df, test='ips', exo='trend', lags = "AIC", ips.stat='Ztbar')
+summary(IPS.trend)
+IPS.trend = plm::purtest(df, test='ips', exo='intercept', lags = "AIC",
+pmax=20, ips.stat='Ztbar')
+summary(IPS.trend)
+IPS.trend = plm::purtest(df, test='ips', exo='trend', lags="AIC",
+pmax=20, ips.stat='Ztbar')
+summary(IPS.trend)
+IPS.trend = plm::purtest(df, test='ips', exo='intercept', lags = "AIC",
+pmax=20, ips.stat='Ztbar')
+summary(IPS.trend)
+df = reshape2::dcast(df, Year ~ Country, value.var='S.Y', fun.aggregate=sum)
+df = read.csv("~/Downloads/df.csv")
+df = reshape2::dcast(df, Year ~ Country, value.var='S.Y', fun.aggregate=sum)
+IPS.trend = plm::purtest(df, test='ips', exo='intercept', lags = "AIC",
+pmax=20, ips.stat='Ztbar')
+summary(IPS.trend)
+IPS.trend = plm::purtest(df, test='ips', exo='intercept', lags = "AIC",
+ips.stat='Ztbar')
+summary(IPS.trend)
+df = data.matrix(df[:, -1])
+df = data.matrix(df[, -1])
+IPS.trend = plm::purtest(df, test='ips', exo='intercept', lags = "AIC",
+ips.stat='Ztbar')
+summary(IPS.trend)
+IPS.trend = plm::purtest(df, test='ips', exo='trend', lags="AIC",
+ips.stat='Ztbar')
+summary(IPS.trend)
+summary(IPS.trend)
+IPS$statistic
+for (col in c('S.Y', 'd.lnY.', 'INF'))
+for (col in c('S.Y', 'd.lnY.', 'INF')) {
+df.ips = reshape2::dcast(df, Year ~ Country, value.var=col, fun.aggregate=sum)
+df.ips = data.matrix(df.ips[, -1])
+IPS.int = plm::purtest(df, test='ips', exo='intercept', lags = "AIC",
+ips.stat='Ztbar')
+print(IPS.int$statistic)
+IPS.trend = plm::purtest(df, test='ips', exo='trend', lags="AIC",
+ips.stat='Ztbar')
+print(IPS.trend$statistic)
+}
+df = read.csv("~/Downloads/df.csv")
+for (col in c('S.Y', 'd.lnY.', 'INF')) {
+df.ips = reshape2::dcast(df, Year ~ Country, value.var=col, fun.aggregate=sum)
+df.ips = data.matrix(df.ips[, -1])
+IPS.int = plm::purtest(df, test='ips', exo='intercept', lags = "AIC",
+ips.stat='Ztbar')
+print(IPS.int$statistic)
+IPS.trend = plm::purtest(df, test='ips', exo='trend', lags="AIC",
+ips.stat='Ztbar')
+print(IPS.trend$statistic)
+}
+df = read.csv("~/Downloads/df.csv")
+for (col in c('S.Y', 'd.lnY.', 'INF')) {
+df.ips = reshape2::dcast(df, Year ~ Country, value.var=col, fun.aggregate=sum)
+df.ips = data.matrix(df.ips[, -1])
+IPS.int = plm::purtest(df.ips, test='ips', exo='intercept', lags = "AIC",
+ips.stat='Ztbar')
+print(IPS.int$statistic)
+IPS.trend = plm::purtest(df.ips, test='ips', exo='trend', lags="AIC",
+ips.stat='Ztbar')
+print(IPS.trend$statistic)
+}
+-0.1437/(1 - 0.7411)
+-0.1424/(1 - 7417)
+-0.1424/(1 - 0.7417)
+?cv.glmnet
+glmnet::cv.glmnet()
+glmnet::cv.glmnet
+?glmnet::cv.glmnet
+source('~/Google Drive/Tinbergen - MPhil/Supervised Machine Learning/Final assignment/SML - Final assignment.R')
+?install.packages
+?devtools::install_github
